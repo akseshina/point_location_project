@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/margarita/AU/geometry/point_location_project/DCEL.h
+vector
+-
+cstdio
+-
+stack
+-
+algorithm
+-
+
+/home/margarita/AU/geometry/point_location_project/main.cpp
+iostream
+-
+DCEL.h
+/home/margarita/AU/geometry/point_location_project/DCEL.h
+read_file.h
+/home/margarita/AU/geometry/point_location_project/read_file.h
+
+/home/margarita/AU/geometry/point_location_project/read_file.h
+cstdio
+-
+DCEL.h
+/home/margarita/AU/geometry/point_location_project/DCEL.h
+

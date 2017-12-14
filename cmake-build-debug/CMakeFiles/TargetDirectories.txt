@@ -1,0 +1,3 @@
+/home/margarita/AU/geometry/point_location_project/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/margarita/AU/geometry/point_location_project/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/margarita/AU/geometry/point_location_project/cmake-build-debug/CMakeFiles/point_location_project.dir
