@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <stack>
 #include <algorithm>
+#include <map>
+
+enum v_type {SPLIT, MERGE, START, END, REGULAR};
 
 //TODO: calculate real parameters
 const int MAX_V = 1000;
@@ -21,7 +24,6 @@ struct point {
 
     int x, y;
 };
-
 double rot_matrix(point a, point b, point c) {
     return a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y);
 }
@@ -38,6 +40,7 @@ struct Vertex {
     Edge * one_starting_e;  /* any half-edge which starts at this Vertex */
     point coord;
     int v_id;
+    v_type type;
 };
 
 struct Face {
@@ -54,6 +57,26 @@ struct Edge {
     int e_id;
 };
 
+struct Segment {
+    Segment(Vertex * pa, Vertex * pb)
+            : a(pa) , b(pb) {}
+    Vertex * a;
+    Vertex * b;
+};
+
+
+struct comp_segments {
+    bool operator() (const Segment & lhs, const Segment & rhs) const {
+        int x1 = lhs.a->coord.x;
+        int y1 = lhs.a->coord.y;
+        int x2 = lhs.b->coord.x;
+        int y2 = lhs.b->coord.y;
+        int x0 = rhs.a->coord.x;
+        int y0 = rhs.a->coord.y;
+        double x_on_lhs = (y0 - y1) * (x2 - x1) / (y2 - y1) + x1;  // TODO: what if y0 == y1?
+        return x_on_lhs < x0;
+    }
+};
 
 struct DCEL {
 
@@ -88,11 +111,12 @@ struct DCEL {
             edges[j].e_id = j;
         }
 
-        faces[0].one_border_e = &(edges[0]);
-        faces[0].f_id = 1;
-        faces[1].one_border_e = &(edges[N]);
-        faces[1].f_id = 0;
+        faces[1].one_border_e = &(edges[0]);
+        faces[1].f_id = 1;
+        faces[0].one_border_e = &(edges[N]);
+        faces[0].f_id = 0;
     }
+
 
     void new_triangle(Vertex * a) { // insert diagonal b--c for triangle abc
 
@@ -138,6 +162,7 @@ struct DCEL {
         c->one_starting_e = c_b;
     }
 
+
     struct less_by_y_key {
         inline bool operator() (const Vertex * a, const Vertex * b) {
             return a->coord.y > b->coord.y ||
@@ -145,9 +170,114 @@ struct DCEL {
         }
     };
 
-    void TriangulateMonotonePolygon(std::vector<Vertex *> vs) {
-        // TODO: get face, reorient one_starting_e for vertices
 
+    void split_to_monotone(Face * f) {
+
+        std::vector<Vertex *> q = vertices_of_face(f);
+        std::sort(q.begin(), q.end(), less_by_y_key());
+        assign_vertices_types(q);
+
+        std::map<Segment, Vertex *, comp_segments> t;
+
+        for (int i = 0; i < q.size(); ++i) {
+            Vertex * v_i = q[i];
+            Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
+            Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
+
+            switch (v_i->type) {
+                case START: {
+                    // Insert e_{i} in T
+                    // helper(e_{i}) <- v_i
+                    t[e_i] = v_i;
+                    break;
+                }
+
+                case END: {
+                    // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
+                    //    Insert edge(v_{i}, helper(e_{i-1})) in D
+                    // Delete e_{i-1} from T
+                    if (t[e_i_prev]->type == MERGE)
+                        std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
+                    t.erase(e_i_prev);
+                    break;
+                }
+
+                case SPLIT: {
+                    // edge e_j = l intersect T
+                    // Search e_j in T
+                    Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+
+                    // Insert edge(v_{i}, helper(e_{j})) in D
+                    std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+
+                    // helper(e_{j}) <-  v_i
+                    t[e_j] = v_i;
+
+                    // Insert e_{i} in T
+                    // helper(e_{i}) <-  v_i
+                    t[e_i] = v_i;
+                    break;
+                }
+
+                case MERGE: {
+                    // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
+                    //    Insert edge(v_{i}, helper(e_{i-1})) in D
+                    // Delete e_{i-1} from T
+                    if (t[e_i_prev]->type == MERGE)
+                        std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
+                    t.erase(e_i_prev);
+
+                    // edge e_j = l intersect P
+                    // Search e_j in T
+                    Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+
+                    // if (Type_of_vertex(helper(e_{j}) = 'merge')
+                    //    Insert edge(v_{i}, helper(e_{j})) in D
+                    if (t[e_j]->type == MERGE)
+                        std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+
+                    // helper(e_{j}) <-  v_i
+                    t[e_j] = v_i;
+                    break;
+                }
+
+                case REGULAR: {
+                    // if (interior of P lies to the right of v_{i})
+                    if (e_i.b->coord.y < e_i_prev.a->coord.y) {
+                        // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
+                        //    Insert edge(v_{i}, helper(e_{i-1})) in D
+                        // Delete e_{i-1} from T
+                        if (t[e_i_prev]->type == MERGE)
+                            std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
+                        t.erase(e_i_prev);
+                        // Insert e_{i} in T
+                        // helper(e_{i}) <-  v_i
+                        t[e_i] = v_i;
+
+                    } else {
+                        // edge e_j = l intersect P
+                        // Search e_j in T
+                        Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+
+                        // if (Type_of_vertex(helper(e_{j}) = 'merge')
+                        //    Insert edge(v_{i}, helper(e_{j})) in D
+                        if (t[e_j]->type == MERGE)
+                            std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+
+                        // helper(e_{j}) <-  v_i
+                        t[e_j] = v_i;
+                    }
+                    break;
+                }
+            }
+
+        }
+    }
+
+
+    void triangulate_monotone(Face * f) {
+
+        std::vector<Vertex *> vs = vertices_of_face(f);
         std::sort(vs.begin(), vs.end(), less_by_y_key());
         std::vector<Vertex *> s;
         s.push_back(vs[0]);
@@ -184,10 +314,52 @@ struct DCEL {
     }
 
 
+    std::vector<Vertex*> vertices_of_face(Face * f) {
+        // get vertices and reorient their one_starting_e
+        Edge * start_e = f->one_border_e;
+        std::vector<Vertex *> vs;
+        Vertex * start_v = start_e->starting_v;
+        vs.push_back(start_v);
+        start_v->one_starting_e = f->one_border_e;
+        Vertex * next_v = start_v->one_starting_e->next->starting_v;
+        Vertex * prev_v = start_v;
+        while (next_v != vs[0]) {
+            next_v->one_starting_e = prev_v->one_starting_e->next;
+            vs.push_back(next_v);
+            prev_v = next_v;
+            next_v = next_v->one_starting_e->next->starting_v;
+        }
+        return vs;
+    }
+
+    void assign_vertices_types(std::vector<Vertex *> vs) {
+        std::vector<v_type> res;
+        for (int i = 0; i < vs.size(); ++i) {
+            Vertex * cur = vs[i];
+            Vertex * prev = cur->one_starting_e->prev->starting_v;
+            Vertex * next = cur->one_starting_e->next->starting_v;
+            if (prev->coord.y < cur->coord.y && next->coord.y < cur->coord.y)
+                if (left_rot(prev->coord, cur->coord, next->coord))
+                    cur->type = START;
+                else
+                    cur->type = SPLIT;
+            else
+                if (prev->coord.y > cur->coord.y && next->coord.y > cur->coord.y)
+                    if (left_rot(prev->coord, cur->coord, next->coord))
+                        cur->type = END;
+                    else
+                        cur->type = MERGE;
+                else
+                    cur->type = REGULAR;
+        }
+    }
+
+
     Vertex vertices[MAX_V];
     Face faces[MAX_F];
     Edge edges[MAX_E];
     int V, E, F;
+
 };
 
 

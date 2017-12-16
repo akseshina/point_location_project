@@ -23,18 +23,9 @@ int main() {
         std::vector<point> poly_points = read_points(N);
         DCEL my_dcel(poly_points);
 
+        my_dcel.split_to_monotone(&my_dcel.faces[1]);
+        //my_dcel.triangulate_monotone(&my_dcel.faces[1]);
 
-        std::vector<Vertex *> all_vs;
-        for (int i = 0; i < my_dcel.V; ++i) {
-            all_vs.push_back(&(my_dcel.vertices[i]));
-        }
-        my_dcel.TriangulateMonotonePolygon(all_vs);
-
-        /*Vertex * v1 = &(my_dcel.vertices[0]);
-        my_dcel.new_triangle(v1);
-
-        Vertex * v2 = &(my_dcel.vertices[4]);
-        my_dcel.new_triangle(v2);*/
 
         int a;
 
