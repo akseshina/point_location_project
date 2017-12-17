@@ -64,6 +64,12 @@ struct Segment {
     Vertex * b;
 };
 
+struct comp_y {
+    bool operator() (const Vertex * a, const Vertex * b) {
+        return a->coord.y > b->coord.y ||
+               (a->coord.y == b->coord.y && a->coord.x < b->coord.x);
+    }
+};
 
 struct comp_segments {
     bool operator() (const Segment & lhs, const Segment & rhs) const {
@@ -163,151 +169,247 @@ struct DCEL {
     }
 
 
-    struct less_by_y_key {
-        inline bool operator() (const Vertex * a, const Vertex * b) {
-            return a->coord.y > b->coord.y ||
-                    (a->coord.y == b->coord.y && a->coord.x < b->coord.x);
+    void add_diagonal_to_list(Vertex *a, Vertex *b, std::vector<std::pair<Edge *, Edge *>> &diags) {
+        if (a->v_id > b->v_id)
+            std::swap(a, b);
+        diags.push_back({a->one_starting_e->prev, b->one_starting_e});
+    }
+
+
+    void add_diagonals(const std::vector<std::pair<Edge *, Edge *>> & diags, const std::vector<Vertex *> & vs) {
+
+        size_t N = vs.size();
+
+        // add new halph-edges
+        for (int i = 0; i < diags.size(); ++i) {
+            Edge * e_a_prev = diags[i].first;
+            Vertex * a = e_a_prev->next->starting_v;
+            // if a already has diag
+            if (e_a_prev->next->next->starting_v->v_id != (a->v_id + 1) % N)
+                e_a_prev = e_a_prev->next->twin;
+
+            Edge * e_b_next = diags[i].second;
+            Vertex * b = e_b_next->starting_v;
+            // if b already has diag
+            if (e_b_next->prev->starting_v->v_id != (N + b->v_id - 1) % N)
+                e_b_next = e_b_next->prev->twin;
+
+            Edge * e_a_next = e_a_prev->next;
+            Edge * e_b_prev = e_b_next->prev;
+
+            E += 2;
+            edges[E - 2].e_id = E - 2;
+            edges[E - 1].e_id = E - 1;
+            Edge * ab = &(edges[E - 2]);
+            Edge * ba = &(edges[E - 1]);
+
+            ab->prev = e_a_prev;
+            ab->next = e_b_next;
+            ab->starting_v = a;
+            ab->twin = ba;
+
+            ba->prev = e_b_prev;
+            ba->next = e_a_next;
+            ba->starting_v = b;
+            ba->twin = ab;
+
+            e_a_prev->next = ab;
+            e_a_next->prev = ba;
+            e_b_prev->next = ba;
+            e_b_next->prev = ab;
         }
-    };
+
+        // add new faces
+        Face * old_face = vs[0]->one_starting_e->adj_face;
+        for (int j = 0; j < vs.size(); ++j) {
+            Edge * start_e = vs[j]->one_starting_e;
+            if (start_e->adj_face == old_face) {
+
+                F += 1;
+                Face * new_face = &(faces[F - 1]);
+                new_face->f_id = F - 1;
+                new_face->one_border_e = start_e;
+                start_e->adj_face = new_face;
+
+                Edge * next_e = start_e->next;
+                while (next_e != start_e) {
+                    next_e->adj_face = new_face;
+                    next_e = next_e->next;
+                }
+            }
+        }
+
+        // remove one useless face (swap last and old)
+        Edge * start_e = faces[F - 1].one_border_e;
+        start_e->adj_face = old_face;
+        old_face->one_border_e = start_e;
+        Edge * next_e = start_e->next;
+        while (next_e != start_e) {
+            next_e->adj_face = old_face;
+            next_e = next_e->next;
+        }
+        --F;
+    }
 
 
     void split_to_monotone(Face * f) {
 
-        std::vector<Vertex *> q = vertices_of_face(f);
-        std::sort(q.begin(), q.end(), less_by_y_key());
-        assign_vertices_types(q);
+        std::vector<Vertex *> vs = vertices_of_face(f);
+        std::sort(vs.begin(), vs.end(), comp_y());
+        assign_vertices_types(vs);
 
-        std::map<Segment, Vertex *, comp_segments> t;
+        int id_i = 0;
+        vs[0]->v_id = id_i;
+        Vertex * next_v = vs[0]->one_starting_e->next->starting_v;
+        while (next_v != vs[0]) {
+            ++id_i;
+            next_v->v_id = id_i;
+            next_v = next_v->one_starting_e->next->starting_v;
+        }
+        
+        std::vector<std::pair<Edge *, Edge *>> diags;
+        std::map<Segment, Vertex *, comp_segments> helper;
 
-        for (int i = 0; i < q.size(); ++i) {
-            Vertex * v_i = q[i];
+        for (int i = 0; i < vs.size(); ++i) {
+            Vertex * v_i = vs[i];
             Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
 
             switch (v_i->type) {
                 case START: {
-                    // Insert e_{i} in T
-                    // helper(e_{i}) <- v_i
-                    t[e_i] = v_i;
+                    // Insert e_i in T, helper(e_i) <- v_i
+                    helper[e_i] = v_i;
                     break;
                 }
 
                 case END: {
-                    // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
-                    //    Insert edge(v_{i}, helper(e_{i-1})) in D
-                    // Delete e_{i-1} from T
-                    if (t[e_i_prev]->type == MERGE)
-                        std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
-                    t.erase(e_i_prev);
+                    // if (Type_of_vertex(helper(e_i_prev) = 'merge')
+                    //     Insert edge(v_i, helper(e_i_prev)) in D
+                    // Delete e_i_prev from T
+                    if (helper[e_i_prev]->type == MERGE)
+                        add_diagonal_to_list(v_i, helper[e_i_prev], diags);
+                    helper.erase(e_i_prev);
                     break;
                 }
 
                 case SPLIT: {
                     // edge e_j = l intersect T
                     // Search e_j in T
-                    Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+                    Segment e_j = std::prev(helper.lower_bound({v_i, v_i}))->first;
 
-                    // Insert edge(v_{i}, helper(e_{j})) in D
-                    std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+                    // Insert edge(v_i, helper(e_j)) in D
+                    add_diagonal_to_list(v_i, helper[e_j], diags);
 
-                    // helper(e_{j}) <-  v_i
-                    t[e_j] = v_i;
+                    // helper(e_j) <- v_i
+                    helper[e_j] = v_i;
 
-                    // Insert e_{i} in T
-                    // helper(e_{i}) <-  v_i
-                    t[e_i] = v_i;
+                    // Insert e_i in T, helper(e_i) <- v_i
+                    helper[e_i] = v_i;
                     break;
                 }
 
                 case MERGE: {
-                    // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
-                    //    Insert edge(v_{i}, helper(e_{i-1})) in D
-                    // Delete e_{i-1} from T
-                    if (t[e_i_prev]->type == MERGE)
-                        std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
-                    t.erase(e_i_prev);
+                    // if (Type_of_vertex(helper(e_i_prev) = 'merge')
+                    //     Insert edge(v_i, helper(e_i_prev)) in D
+                    // Delete e_i_prev from T
+                    if (helper[e_i_prev]->type == MERGE)
+                        add_diagonal_to_list(v_i, helper[e_i_prev], diags);
+                    helper.erase(e_i_prev);
 
                     // edge e_j = l intersect P
                     // Search e_j in T
-                    Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+                    Segment e_j = std::prev(helper.lower_bound({v_i, v_i}))->first;
 
-                    // if (Type_of_vertex(helper(e_{j}) = 'merge')
-                    //    Insert edge(v_{i}, helper(e_{j})) in D
-                    if (t[e_j]->type == MERGE)
-                        std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+                    // if (Type_of_vertex(helper(e_j) = 'merge')
+                    //     Insert edge(v_i, helper(e_j)) in D
+                    if (helper[e_j]->type == MERGE)
+                        add_diagonal_to_list(v_i, helper[e_j], diags);
 
-                    // helper(e_{j}) <-  v_i
-                    t[e_j] = v_i;
+                    // helper(e_j) <- v_i
+                    helper[e_j] = v_i;
                     break;
                 }
 
                 case REGULAR: {
-                    // if (interior of P lies to the right of v_{i})
+                    // if (interior of P lies to the right of v_i)
                     if (e_i.b->coord.y < e_i_prev.a->coord.y) {
-                        // if (Type_of_vertex(helper(e_{i-1}) = 'merge')
-                        //    Insert edge(v_{i}, helper(e_{i-1})) in D
-                        // Delete e_{i-1} from T
-                        if (t[e_i_prev]->type == MERGE)
-                            std::cout << v_i->v_id << ' ' << t[e_i_prev]->v_id << std::endl;
-                        t.erase(e_i_prev);
-                        // Insert e_{i} in T
-                        // helper(e_{i}) <-  v_i
-                        t[e_i] = v_i;
+                        // if (Type_of_vertex(helper(e_i_prev) = 'merge')
+                        //     Insert edge(v_i, helper(e_i_prev)) in D
+                        // Delete e_i_prev from T
+                        if (helper[e_i_prev]->type == MERGE)
+                            add_diagonal_to_list(v_i, helper[e_i_prev], diags);
+                        helper.erase(e_i_prev);
+                        // Insert e_i in T, helper(e_i) <- v_i
+                        helper[e_i] = v_i;
 
                     } else {
                         // edge e_j = l intersect P
                         // Search e_j in T
-                        Segment e_j = std::prev(t.lower_bound({v_i, v_i}))->first;
+                        Segment e_j = std::prev(helper.lower_bound({v_i, v_i}))->first;
 
-                        // if (Type_of_vertex(helper(e_{j}) = 'merge')
-                        //    Insert edge(v_{i}, helper(e_{j})) in D
-                        if (t[e_j]->type == MERGE)
-                            std::cout << v_i->v_id << ' ' << t[e_j]->v_id << std::endl;
+                        // if (Type_of_vertex(helper(e_j) = 'merge')
+                        //     Insert edge(v_i, helper(e_j)) in D
+                        if (helper[e_j]->type == MERGE)
+                            add_diagonal_to_list(v_i, helper[e_j], diags);
 
-                        // helper(e_{j}) <-  v_i
-                        t[e_j] = v_i;
+                        // helper(e_j) <- v_i
+                        helper[e_j] = v_i;
                     }
                     break;
                 }
             }
-
         }
+
+        add_diagonals(diags, vs);
     }
 
 
     void triangulate_monotone(Face * f) {
 
         std::vector<Vertex *> vs = vertices_of_face(f);
-        std::sort(vs.begin(), vs.end(), less_by_y_key());
+        std::sort(vs.begin(), vs.end(), comp_y());
         std::vector<Vertex *> s;
         s.push_back(vs[0]);
         s.push_back(vs[1]);
+
         for (int j = 2; j < vs.size() - 1; ++j) {
             Vertex * e_end = s[0]->one_starting_e->next->starting_v;
+            int orientation = 0;
+            if (e_end == s[1]) {
+                e_end = s[0]->one_starting_e->prev->starting_v;
+                orientation = 1;
+            }
 
             if (vs[j] == e_end) { // Текущая вершина v_j является нижним концом стороны e,
-                                  // ограничивающего воронку
+                                  // ограничивающей воронку
                 for (int si = 0; si < s.size() - 1; ++si)
                     new_triangle(s[si]);
                 s.clear();
-                s.push_back(vs[j]);
                 s.push_back(vs[j - 1]);
+                s.push_back(vs[j]);
             }
 
             else {                // Вершина v_j принадлежит последовательной цепи вершин, добавленных в S
                 Vertex * last = s.back();
                 s.pop_back();
-                while (left_rot(vs[j]->coord, last->coord, s.back()->coord)) {
-                    new_triangle(last);
-                    last = s.back();
-                    s.pop_back();
-                }
+                if (orientation == 0)
+                    while (!s.empty() && left_rot(vs[j]->coord, last->coord, s.back()->coord)) {
+                        new_triangle(last);
+                        last = s.back();
+                        s.pop_back();
+                    }
+                else
+                    while (!s.empty() && right_rot(vs[j]->coord, last->coord, s.back()->coord)) {
+                        new_triangle(last);
+                        last = s.back();
+                        s.pop_back();
+                    }
                 s.push_back(last);
                 s.push_back(vs[j]);
             }
         }
 
-        if (vs.size() > 2)
+        if (s.size() > 2)
             for (int si = 0; si < s.size() - 1; ++si)
                 new_triangle(s[si]);
         s.clear();
@@ -331,6 +433,7 @@ struct DCEL {
         }
         return vs;
     }
+
 
     void assign_vertices_types(std::vector<Vertex *> vs) {
         std::vector<v_type> res;

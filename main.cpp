@@ -24,11 +24,14 @@ int main() {
         DCEL my_dcel(poly_points);
 
         my_dcel.split_to_monotone(&my_dcel.faces[1]);
-        //my_dcel.triangulate_monotone(&my_dcel.faces[1]);
+        //std::cout << my_dcel.F << std::endl;
+
+        int old_F = my_dcel.F;
+        for (int i = 1; i < old_F; ++i)
+            my_dcel.triangulate_monotone(&my_dcel.faces[i]);
 
 
-        int a;
-
+        //std::cout << my_dcel.F << std::endl;
     }
 
 
