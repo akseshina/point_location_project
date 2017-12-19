@@ -22,7 +22,7 @@ void make_ccw(std::vector<point> &points){
 }
 
 const long long INF = 1e9 + 10;
-const point LEFT(-2 * INF, -INF), RIGHT(2 * INF, -INF - 1), TOP(0, 3 * INF);
+const point LEFT(-2 * INF, -INF), RIGHT(2 * INF, -INF), TOP(0, 3 * INF);
 
 std::vector<point> outer(const std::vector<point> &points){
 	std::vector<point> p;
