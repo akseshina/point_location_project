@@ -301,7 +301,7 @@ public:
             edges[i].next = &(edges[(i + 1) % N]);
             edges[i].twin = &(edges[i + N]);
             edges[i].starting_v = &(vertices[i]);
-            edges[i].adj_face = &(faces[0]);
+            edges[i].adj_face = &(faces[1]);
             edges[i].e_id = i;
 
             // edge p[i + 1] -> p[i]
@@ -310,7 +310,7 @@ public:
             edges[j].next = &(edges[(N + j - 1) % N + N]);
             edges[j].twin = &(edges[i]);
             edges[j].starting_v = &(vertices[(i + 1) % N]);
-            edges[j].adj_face = &(faces[1]);
+            edges[j].adj_face = &(faces[0]);
             edges[j].e_id = j;
         }
 
@@ -331,6 +331,8 @@ public:
     }
 
     void new_triangle(Vertex *a) { // insert diagonal b--c for triangle abc
+
+        std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
 
         Edge *a_b = a->one_starting_e;
         Edge *c_a = a_b->prev;
@@ -486,9 +488,8 @@ public:
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
 
 
-            char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
-
             /*
+            char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
             std::cout << std::endl;
             std::cout << v_i->v_id << ' ' << Types[v_i->type] << std::endl;
             for (auto const& x : helper) {
@@ -502,7 +503,6 @@ public:
                 case START: {
                     // Insert e_i in T, helper(e_i) <- v_i
                     helper[e_i] = v_i;
-                    //std::cout << "!!! " << e_i.a->v_id << ' ' << (*helper.find(e_i)).first.a->v_id << std::endl;
                     break;
                 }
 
@@ -528,7 +528,6 @@ public:
                     helper[e_j] = v_i;
 
                     // Insert e_i in T, helper(e_i) <- v_i
-                    std::cout << e_i.a->v_id << ' ' << e_i.b->v_id << std::endl;
                     helper[e_i] = v_i;
                     break;
                 }
@@ -633,7 +632,7 @@ public:
         }
 
         if (s.size() > 2)
-            for (int si = 0; si < s.size() - 1; ++si)
+            for (int si = 0; si < s.size() - 2; ++si)
                 new_triangle(s[si]);
         s.clear();
     }
