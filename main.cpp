@@ -45,10 +45,10 @@ void triangulate(DCEL &dcel){
 }
 
 int main() {
-	freopen("input.txt", "r", stdin);
+	//freopen("input.txt", "r", stdin);
 
     int T, N, K;
-    scanf("%d", &T);
+    // scanf("%d", &T);
 
     for (int t = 0; t < 1; ++t) { // change 1 to T
         scanf("%d", &N);
