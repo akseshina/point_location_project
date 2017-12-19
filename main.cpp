@@ -46,7 +46,7 @@ void triangulate(DCEL &dcel){
 }
 
 std::pair<ld, ld> rt(std::vector<point> &points){
-	ld s = rand() % 100 / 100, c = sqrtl(1 - s * s);
+	ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
 	for(auto &p: points)
 		p.rt(s, c);
 	return {s, c};
@@ -63,8 +63,8 @@ int main() {
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
         auto sc = rt(poly_points);
-		for(auto &p: poly_points)
-			printf("%.3f %.3f\n", (double)p.x, (double)p.y);
+/*		for(auto &p: poly_points)
+			printf("%.3f %.3f\n", (double)p.x, (double)p.y);*/
 		
         make_ccw(poly_points); // leftest bottoms point now has index 0
         DCEL inner_dcel(poly_points), outer_dcel(outer(poly_points));
