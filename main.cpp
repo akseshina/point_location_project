@@ -30,7 +30,7 @@ std::vector<point> outer(const std::vector<point> &points){
 	p.push_back(points[0]);
 	for(int i = points.size() - 1; i >= 0; --i)
 		p.push_back(points[i]);
-	p.back().y += 2 * EPS;
+	p.back().y -= 2 * EPS;
 	p.push_back(LEFT);
 	--p.back().y;
 	p.push_back(RIGHT);
