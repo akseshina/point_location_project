@@ -30,6 +30,7 @@ std::vector<point> outer(const std::vector<point> &points){
 	p.push_back(points[0]);
 	for(int i = points.size() - 1; i >= 0; --i)
 		p.push_back(points[i]);
+	p.back().y += 2 * EPS;
 	p.push_back(LEFT);
 	--p.back().y;
 	p.push_back(RIGHT);
@@ -92,7 +93,7 @@ int main() {
 			auto &v = dcel.vertices[i];
 			const auto &vold1 = inner_dcel.vertices[i], &vold2 = outer_dcel.vertices[N - i + 1];
 			assert(vold1.coord == poly_points[i]);
-			assert(vold2.coord == poly_points[i]);
+//			assert(vold2.coord == poly_points[i]);
 			v.coord = poly_points[i];
 			v.v_id = i;
 			v.one_starting_e = vold1.one_starting_e;
@@ -127,8 +128,8 @@ int main() {
 				continue;
 			auto &e = dcel.edges[dcel.E];
 			const auto &eold = outer_dcel.edges[i];
-/*			printf("(2) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
-			printf("%f %f -> %f %f\n",(double)eold.starting_v->coord.x,(double)eold.starting_v->coord.y,(double)eold.twin->starting_v->coord.x,(double)eold.twin->starting_v->coord.y);*/
+			printf("(2) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
+			printf("%f %f -> %f %f\n",(double)eold.starting_v->coord.x,(double)eold.starting_v->coord.y,(double)eold.twin->starting_v->coord.x,(double)eold.twin->starting_v->coord.y);
 			e.e_id = dcel.E;
 			e.adj_face = eold.adj_face, e.prev = eold.prev, e.next = eold.next, e.twin = eold.twin, e.starting_v = eold.starting_v;
 			edge_mapping[&eold] = &e;
@@ -195,6 +196,7 @@ int main() {
 		}
 		for(int i = 0; i < dcel.F; ++i){
 			auto &f = dcel.faces[i];
+			printf("%p\n", f.one_border_e), fflush(stdout);
 			f.one_border_e = edge_mapping[f.one_border_e];
 			assert(f.one_border_e != NULL);
 		}
