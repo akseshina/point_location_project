@@ -22,7 +22,7 @@ void make_ccw(std::vector<point> &points){
 }
 
 const long long INF = 1e9 + 10;
-const point LEFT(-2 * INF, -INF), RIGHT(2 * INF, -INF), TOP(0, 3 * INF);
+const point LEFT(-2 * INF, -INF), RIGHT(2 * INF, -INF - 1), TOP(0, 3 * INF);
 
 std::vector<point> outer(const std::vector<point> &points){
 	std::vector<point> p;
@@ -39,14 +39,15 @@ std::vector<point> outer(const std::vector<point> &points){
 
 void triangulate(DCEL &dcel){
     dcel.split_to_monotone(&dcel.faces[1]);
-	puts("split is ok"),fflush(stdout);
+//	puts("split is ok"),fflush(stdout);
     int old_F = dcel.F;
     for (int i = 1; i < old_F; ++i)
         dcel.triangulate_monotone(&dcel.faces[i]);
 }
 
 std::pair<ld, ld> rt(std::vector<point> &points){
-	ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
+//	ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
+	ld s = 0, c = 1;
 	for(auto &p: points)
 		p.rt(s, c);
 	return {s, c};
@@ -68,22 +69,28 @@ int main() {
 		
         make_ccw(poly_points); // leftest bottoms point now has index 0
         DCEL inner_dcel(poly_points), outer_dcel(outer(poly_points));
+/*        for(int i = 0;i< outer_dcel.V;++i)
+			printf("%f %f %d\n",(double)outer_dcel.vertices[i].coord.x,(double)outer_dcel.vertices[i].coord.y,outer_dcel.vertices[i].v_id);*/
         Edge *ein[3] = {&outer_dcel.edges[N + 4], &outer_dcel.edges[N + 3], &outer_dcel.edges[N + 2]};
 
         triangulate(inner_dcel);
-        puts("test"), fflush(stdout);
+//        puts("test"), fflush(stdout);
 		triangulate(outer_dcel);
-        puts("test"), fflush(stdout);		
-		
+//        puts("test"), fflush(stdout);		
+			
 		std::unordered_map<const Vertex*, Vertex*> vertex_mapping;
 		std::unordered_map<const Edge*, Edge*> edge_mapping;
 		std::unordered_map<const Face*, Face*> face_mapping;
+/*		for(int i = 0;i< inner_dcel.V;++i)
+			printf("%p %f %f %d\n",&inner_dcel.vertices[i], (double)inner_dcel.vertices[i].coord.x,(double)inner_dcel.vertices[i].coord.y,inner_dcel.vertices[i].v_id);
+		for(int i = 0;i< outer_dcel.V;++i)
+			printf("%p %f %f %d\n",&outer_dcel.vertices[i], (double)outer_dcel.vertices[i].coord.x,(double)outer_dcel.vertices[i].coord.y,outer_dcel.vertices[i].v_id);*/
 
 		DCEL dcel;
 		dcel.V = N + 3;
 		for(int i = 0; i < N; ++i){
 			auto &v = dcel.vertices[i];
-			const auto &vold1 = inner_dcel.vertices[i], &vold2 = outer_dcel.vertices[N - i];
+			const auto &vold1 = inner_dcel.vertices[i], &vold2 = outer_dcel.vertices[N - i + 1];
 			assert(vold1.coord == poly_points[i]);
 			assert(vold2.coord == poly_points[i]);
 			v.coord = poly_points[i];
@@ -93,21 +100,22 @@ int main() {
 			vertex_mapping[&vold2] = &v;
 		}
 		for(int i = 0; i < 3; ++i){
-			auto &v = dcel.vertices[i];
+			auto &v = dcel.vertices[N + i];
 			const auto &vold = outer_dcel.vertices[N + 2 + i];
 			v.coord = vold.coord;
 			v.v_id = i;
 			v.one_starting_e = vold.one_starting_e;
 			vertex_mapping[&vold] = &v;
 		}
-		vertex_mapping[&outer_dcel.vertices[0]] = &dcel.vertices[N];
-		vertex_mapping[&outer_dcel.vertices[N + 1]] = &dcel.vertices[0];
+		vertex_mapping[&outer_dcel.vertices[0]] = &dcel.vertices[N + 2];
+		vertex_mapping[&outer_dcel.vertices[1]] = &dcel.vertices[N + 1];
 		
 		for(int i = 0; i < inner_dcel.E; ++i){
 			if(N <= i && i < 2 * N) // skip outer cycle of inner triangulation
 				continue;
 			auto &e = dcel.edges[dcel.E];
 			const auto &eold = inner_dcel.edges[i];
+//			printf("(1) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
 			e.e_id = dcel.E;
 			e.adj_face = eold.adj_face, e.prev = eold.prev, e.next = eold.next, e.twin = eold.twin, e.starting_v = eold.starting_v;
 			edge_mapping[&eold] = &e;
@@ -119,6 +127,8 @@ int main() {
 				continue;
 			auto &e = dcel.edges[dcel.E];
 			const auto &eold = outer_dcel.edges[i];
+/*			printf("(2) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
+			printf("%f %f -> %f %f\n",(double)eold.starting_v->coord.x,(double)eold.starting_v->coord.y,(double)eold.twin->starting_v->coord.x,(double)eold.twin->starting_v->coord.y);*/
 			e.e_id = dcel.E;
 			e.adj_face = eold.adj_face, e.prev = eold.prev, e.next = eold.next, e.twin = eold.twin, e.starting_v = eold.starting_v;
 			edge_mapping[&eold] = &e;
@@ -171,13 +181,15 @@ int main() {
 		
 		for(int i = 0; i < dcel.V; ++i){
 			auto &v = dcel.vertices[i];
+//			printf("i = %d %p\n", i,v.one_starting_e),fflush(stdout);
 			v.one_starting_e = edge_mapping[v.one_starting_e];
 			assert(v.one_starting_e != NULL);
-		}
+		}	
 		for(int i = 0; i < dcel.E; ++i){
 			auto &e = dcel.edges[i];
 			e.adj_face = face_mapping[e.adj_face];
 			e.prev = edge_mapping[e.prev], e.next = edge_mapping[e.prev], e.twin = edge_mapping[e.twin];
+//			printf("i = %d p=%p\n",i,e.starting_v);
 			e.starting_v = vertex_mapping[e.starting_v];
 			assert(e.starting_v != NULL);
 		}
