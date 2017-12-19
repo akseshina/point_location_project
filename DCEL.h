@@ -457,6 +457,7 @@ public:
 
         std::vector<std::pair<Edge *, Edge *>> diags;
         std::map<Segment, Vertex *, comp_segments> helper;
+        std::cout << "helper size: " << helper.size() << std::endl;
 
         for (int i = 0; i < vs.size(); ++i) {
             Vertex *v_i = vs[i];

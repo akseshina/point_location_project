@@ -1,1 +1,1 @@
-/usr/bin/c++   -g   CMakeFiles/point_location_project.dir/main.cpp.o  -o point_location_project 
+/usr/bin/c++   -O0 -g   CMakeFiles/point_location_project.dir/main.cpp.o  -o point_location_project 
