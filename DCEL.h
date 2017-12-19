@@ -147,18 +147,36 @@ struct comp_y {
 
 struct comp_segments {
     bool operator()(const Segment &lhs, const Segment &rhs) const {
+
         auto x1 = lhs.a->coord.x;
         auto y1 = lhs.a->coord.y;
         auto x2 = lhs.b->coord.x;
         auto y2 = lhs.b->coord.y;
-        auto x0 = rhs.a->coord.x;
-        auto y0 = rhs.a->coord.y;
 
-        if (eq(y1, y2))
-            return gr(x0, x2);
+        auto x3 = rhs.a->coord.x;
+        auto y3 = rhs.a->coord.y;
+        auto x4 = rhs.b->coord.x;
+        auto y4 = rhs.b->coord.y;
+        //std::cout << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << ' ' << x0 << ' ' << y0 << std::endl;
 
-        long double x_on_lhs = (y0 - y1) * (long double) (x2 - x1) / (y2 - y1) + x1;
-        return ls(x_on_lhs, x0);
+        if(lhs.a == rhs.a && lhs.b == rhs.b)
+            return false;
+
+        auto yc = std::min(std::max(y1, y2), std::max(y3, y4));
+
+        long double x_on_lhs = (yc - y1) * (long double) (x2 - x1) / (y2 - y1) + (long double) x1;
+        long double x_on_rhs = x3;
+        if (rhs.a != rhs.b)
+            x_on_rhs = (yc - y3) * (long double) (x4 - x3) / (y4 - y3) + (long double) x3;
+
+        /*
+        std::cout << "Compare " << lhs.a->v_id << '-' << lhs.b->v_id
+                  << ' ' << rhs.a->v_id << '-' << rhs.b->v_id << ' ' << x_on_lhs << ' ' << x_on_rhs
+                  << std::endl;
+        std::cout << yc << std::endl;
+         */
+
+        return ls(x_on_lhs, x_on_rhs);
     }
 };
 
@@ -382,6 +400,8 @@ public:
             if (e_b_next->prev->starting_v->v_id != (N + b->v_id - 1) % N)
                 e_b_next = e_b_next->prev->twin;
 
+            std::cout << "new diagonal: " << a->v_id << ' ' << b->v_id << std::endl;
+
             Edge *e_a_next = e_a_prev->next;
             Edge *e_b_prev = e_b_next->prev;
 
@@ -455,19 +475,34 @@ public:
             next_v = next_v->one_starting_e->next->starting_v;
         }
 
+        //std::cout << "vs size: " << vs.size() << std::endl;
+
         std::vector<std::pair<Edge *, Edge *>> diags;
         std::map<Segment, Vertex *, comp_segments> helper;
-        std::cout << "helper size: " << helper.size() << std::endl;
 
         for (int i = 0; i < vs.size(); ++i) {
             Vertex *v_i = vs[i];
             Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
 
+
+            char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
+
+            /*
+            std::cout << std::endl;
+            std::cout << v_i->v_id << ' ' << Types[v_i->type] << std::endl;
+            for (auto const& x : helper) {
+                std::cout << x.first.a->v_id << '-' << x.first.b->v_id
+                          << " : "
+                          << x.second->v_id
+                          << std::endl ;
+            }*/
+
             switch (v_i->type) {
                 case START: {
                     // Insert e_i in T, helper(e_i) <- v_i
                     helper[e_i] = v_i;
+                    //std::cout << "!!! " << e_i.a->v_id << ' ' << (*helper.find(e_i)).first.a->v_id << std::endl;
                     break;
                 }
 
@@ -493,6 +528,7 @@ public:
                     helper[e_j] = v_i;
 
                     // Insert e_i in T, helper(e_i) <- v_i
+                    std::cout << e_i.a->v_id << ' ' << e_i.b->v_id << std::endl;
                     helper[e_i] = v_i;
                     break;
                 }
