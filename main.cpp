@@ -27,10 +27,11 @@ const point LEFT(-2 * INF, -INF), RIGHT(2 * INF, -INF), TOP(0, 3 * INF);
 std::vector<point> outer(const std::vector<point> &points){
 	std::vector<point> p;
 	p.push_back(LEFT);
+	p.push_back(points[0]);
 	for(int i = points.size() - 1; i >= 0; --i)
 		p.push_back(points[i]);
-	p.push_back(points[0]);
 	p.push_back(LEFT);
+	--p.back().y;
 	p.push_back(RIGHT);
 	p.push_back(TOP);
 	return p;
@@ -38,10 +39,17 @@ std::vector<point> outer(const std::vector<point> &points){
 
 void triangulate(DCEL &dcel){
     dcel.split_to_monotone(&dcel.faces[1]);
-
+	puts("split is ok"),fflush(stdout);
     int old_F = dcel.F;
     for (int i = 1; i < old_F; ++i)
         dcel.triangulate_monotone(&dcel.faces[i]);
+}
+
+std::pair<ld, ld> rt(std::vector<point> &points){
+	ld s = rand() % 100 / 100, c = sqrtl(1 - s * s);
+	for(auto &p: points)
+		p.rt(s, c);
+	return {s, c};
 }
 
 int main() {
@@ -54,12 +62,18 @@ int main() {
         scanf("%d", &N);
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
+        auto sc = rt(poly_points);
+		for(auto &p: poly_points)
+			printf("%.3f %.3f\n", (double)p.x, (double)p.y);
+		
         make_ccw(poly_points); // leftest bottoms point now has index 0
         DCEL inner_dcel(poly_points), outer_dcel(outer(poly_points));
         Edge *ein[3] = {&outer_dcel.edges[N + 4], &outer_dcel.edges[N + 3], &outer_dcel.edges[N + 2]};
 
         triangulate(inner_dcel);
+        puts("test"), fflush(stdout);
 		triangulate(outer_dcel);
+        puts("test"), fflush(stdout);		
 		
 		std::unordered_map<const Vertex*, Vertex*> vertex_mapping;
 		std::unordered_map<const Edge*, Edge*> edge_mapping;
@@ -183,7 +197,9 @@ int main() {
         int x, y;
         for(int i = 0; i < K; ++i){
         	scanf("%d%d", &x, &y);
-        	puts(ss.inside(point(x, y)) ? "INSIDE" : "OUTSIDE");
+        	point p(x, y);
+        	p.rt(sc.first, sc.second);
+        	puts(ss.inside(p) ? "INSIDE" : "OUTSIDE");
         }
     }
 

@@ -20,46 +20,71 @@ const int DEG_BOUND = 12;
 
 struct Edge;
 
+typedef long double ld;
+
+const ld EPS = 1e-9;
+inline bool gr(ld a, ld b){
+	return a > b + EPS;
+}
+inline bool ls(ld a, ld b){
+	return a < b - EPS;
+}
+inline bool eq(ld a, ld b){
+	return std::abs(a - b) < EPS;
+}
+inline bool geq(ld a, ld b){
+	return a >= b - EPS;
+}
+inline bool leq(ld a, ld b){
+	return a <= b + EPS;
+}
+
+
 struct point {
     point()
             : x(0), y(0) {}
 
-    point(long long cur_x, long long cur_y)
+    point(ld cur_x, ld cur_y)
             : x(cur_x), y(cur_y) {}
 
-    long long x, y;
+    ld x, y;
 
     inline point operator-(const point &b) const {
         return point(x - b.x, y - b.y);
     }
 
-    inline long long operator*(const point &b) const {
-        return x * 1ll * b.x + y * 1ll * b.y;
+    inline ld operator*(const point &b) const {
+        return x * b.x + y * b.y;
     }
 
-    inline long long operator%(const point &b) const {
-        return x * 1ll * b.y - y * 1ll * b.x;
+    inline ld operator%(const point &b) const {
+        return x * b.y - y * b.x;
     }
 
     inline bool operator<(const point &b) const {
-        return x < b.x || (x == b.x && y < b.y);
+        return ls(x, b.x) || (eq(x, b.x) && ls(y, b.y));
     }
 
     inline bool operator==(const point &b) const {
-        return x == b.x && y == b.y;
+        return eq(x, b.x) && eq(y, b.y);
+    }
+    
+    inline void rt(ld s, ld c){
+	    ld x0 = c * x - s * y, y0 = c * y + s * x;
+		x = x0, y = y0;
     }
 };
 
-long long rot_matrix(point a, point b, point c) {
-    return a.x * 1ll * (b.y - c.y) + b.x * 1ll * (c.y - a.y) + c.x * 1ll * (a.y - b.y);
+ld rot_matrix(point a, point b, point c) {
+    return a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y);
 }
 
 bool left_rot(point a, point b, point c) {
-    return rot_matrix(a, b, c) > 0;
+    return gr(rot_matrix(a, b, c), 0);
 }
 
 bool right_rot(point a, point b, point c) {
-    return rot_matrix(a, b, c) < 0;
+    return ls(rot_matrix(a, b, c), 0);
 }
 
 struct Vertex {
@@ -115,8 +140,8 @@ struct Segment {
 
 struct comp_y {
     bool operator()(const Vertex *a, const Vertex *b) {
-        return a->coord.y > b->coord.y ||
-               (a->coord.y == b->coord.y && a->coord.x < b->coord.x);
+        return gr(a->coord.y, b->coord.y) ||
+               (eq(a->coord.y, b->coord.y) && ls(a->coord.x, b->coord.x));
     }
 };
 
@@ -129,11 +154,11 @@ struct comp_segments {
         auto x0 = rhs.a->coord.x;
         auto y0 = rhs.a->coord.y;
 
-        if (y1 == y2)
-            return x0 > x2;
+        if (eq(y1, y2))
+            return gr(x0, x2);
 
-        long double x_on_lhs = (y0 - y1) * (long double) (x2 - x1) / (y2 - y1) + x1;  // TODO: what if y0 == y1?
-        return x_on_lhs < x0;
+        long double x_on_lhs = (y0 - y1) * (long double) (x2 - x1) / (y2 - y1) + x1;
+        return ls(x_on_lhs, x0);
     }
 };
 
@@ -149,9 +174,9 @@ struct Triangle {
     }
 
     bool contains(const point &p) {
-        return (v[1] - v[0]) % (p - v[0]) >= 0 &&
-               (v[2] - v[0]) % (p - v[0]) <= 0 &&
-               (v[2] - v[1]) % (p - v[1]) >= 0;
+        return geq((v[1] - v[0]) % (p - v[0]), 0) &&
+               leq((v[2] - v[0]) % (p - v[0]), 0) &&
+               geq((v[2] - v[1]) % (p - v[1]), 0);
     }
 };
 
@@ -161,12 +186,12 @@ struct TrianglePart {
     bool inner;
 };
 
-inline int sign(long long a) {
+inline int sign(ld a) {
     return (a > 0) - (a < 0);
 }
 
 inline bool onInterval(const point &p, const point &a, const point &b) {
-    return (p - a) % (b - a) == 0 && (p - a) * (b - a) >= 0 && (p - b) * (a - b) >= 0;
+    return eq((p - a) % (b - a), 0) && geq((p - a) * (b - a), 0) && geq((p - b) * (a - b), 0);
 }
 
 bool intervalIntersects(const point &a, const point &b, const point &c, const point &d) {
