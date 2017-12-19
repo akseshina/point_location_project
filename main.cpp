@@ -75,9 +75,7 @@ int main() {
         Edge *ein[3] = {&outer_dcel.edges[N + 4], &outer_dcel.edges[N + 3], &outer_dcel.edges[N + 2]};
 
         triangulate(inner_dcel);
-//        puts("test"), fflush(stdout);
 		triangulate(outer_dcel);
-//        puts("test"), fflush(stdout);		
 			
 		std::unordered_map<const Vertex*, Vertex*> vertex_mapping;
 		std::unordered_map<const Edge*, Edge*> edge_mapping;
@@ -92,8 +90,6 @@ int main() {
 		for(int i = 0; i < N; ++i){
 			auto &v = dcel.vertices[i];
 			const auto &vold1 = inner_dcel.vertices[i], &vold2 = outer_dcel.vertices[N - i + 1];
-			assert(vold1.coord == poly_points[i]);
-//			assert(vold2.coord == poly_points[i]);
 			v.coord = poly_points[i];
 			v.v_id = i;
 			v.one_starting_e = vold1.one_starting_e;
@@ -104,19 +100,18 @@ int main() {
 			auto &v = dcel.vertices[N + i];
 			const auto &vold = outer_dcel.vertices[N + 2 + i];
 			v.coord = vold.coord;
-			v.v_id = i;
+			v.v_id = N + i;
 			v.one_starting_e = vold.one_starting_e;
 			vertex_mapping[&vold] = &v;
 		}
-		vertex_mapping[&outer_dcel.vertices[0]] = &dcel.vertices[N + 2];
-		vertex_mapping[&outer_dcel.vertices[1]] = &dcel.vertices[N + 1];
+		vertex_mapping[&outer_dcel.vertices[0]] = &dcel.vertices[N];
+		vertex_mapping[&outer_dcel.vertices[1]] = &dcel.vertices[0];
 		
 		for(int i = 0; i < inner_dcel.E; ++i){
 			if(N <= i && i < 2 * N) // skip outer cycle of inner triangulation
 				continue;
 			auto &e = dcel.edges[dcel.E];
 			const auto &eold = inner_dcel.edges[i];
-//			printf("(1) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
 			e.e_id = dcel.E;
 			e.adj_face = eold.adj_face, e.prev = eold.prev, e.next = eold.next, e.twin = eold.twin, e.starting_v = eold.starting_v;
 			edge_mapping[&eold] = &e;
@@ -128,8 +123,6 @@ int main() {
 				continue;
 			auto &e = dcel.edges[dcel.E];
 			const auto &eold = outer_dcel.edges[i];
-			printf("(2) %p: edge from %d to %d\n",&eold,eold.starting_v->v_id,eold.twin->starting_v->v_id);
-			printf("%f %f -> %f %f\n",(double)eold.starting_v->coord.x,(double)eold.starting_v->coord.y,(double)eold.twin->starting_v->coord.x,(double)eold.twin->starting_v->coord.y);
 			e.e_id = dcel.E;
 			e.adj_face = eold.adj_face, e.prev = eold.prev, e.next = eold.next, e.twin = eold.twin, e.starting_v = eold.starting_v;
 			edge_mapping[&eold] = &e;
@@ -141,6 +134,7 @@ int main() {
 			ein[i] = edge_mapping[ein[i]];
 			assert(ein[i] != NULL);
 			eout[i] = &dcel.edges[dcel.E];
+			edge_mapping[eout[i]] = eout[i];
 			++dcel.E;
 		}
 
@@ -182,21 +176,19 @@ int main() {
 		
 		for(int i = 0; i < dcel.V; ++i){
 			auto &v = dcel.vertices[i];
-//			printf("i = %d %p\n", i,v.one_starting_e),fflush(stdout);
 			v.one_starting_e = edge_mapping[v.one_starting_e];
 			assert(v.one_starting_e != NULL);
 		}	
 		for(int i = 0; i < dcel.E; ++i){
 			auto &e = dcel.edges[i];
 			e.adj_face = face_mapping[e.adj_face];
-			e.prev = edge_mapping[e.prev], e.next = edge_mapping[e.prev], e.twin = edge_mapping[e.twin];
-//			printf("i = %d p=%p\n",i,e.starting_v);
+			e.prev = edge_mapping[e.prev], e.next = edge_mapping[e.next], e.twin = edge_mapping[e.twin];
 			e.starting_v = vertex_mapping[e.starting_v];
 			assert(e.starting_v != NULL);
 		}
-		for(int i = 0; i < dcel.F; ++i){
+
+		for(int i = 1; i < dcel.F; ++i){
 			auto &f = dcel.faces[i];
-			printf("%p\n", f.one_border_e), fflush(stdout);
 			f.one_border_e = edge_mapping[f.one_border_e];
 			assert(f.one_border_e != NULL);
 		}
