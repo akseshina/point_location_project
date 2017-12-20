@@ -165,6 +165,7 @@ struct comp_segments {
 struct Triangle {
     point v[3];
 
+	Triangle(){}    
     Triangle(const std::vector<point> &a) {
         assert((int) a.size() == 3);
         for (int k = 0; k < 3; ++k)
@@ -184,6 +185,12 @@ struct TrianglePart {
     std::vector<int> nums;
     Triangle triangle;
     bool inner;
+    TrianglePart(std::vector<Vertex*> v, bool in):inner(in){
+    	assert((int)v.size() == 3);
+    	triangle = Triangle({v[0]->coord, v[1]->coord, v[2]->coord});
+    	nums = {v[0]->v_id, v[1]->v_id, v[2]->v_id};
+    	std::sort(nums.begin(), nums.end());
+    }
 };
 
 inline int sign(ld a) {
@@ -684,7 +691,7 @@ public:
 
             for (int i = 0, k; i < V; ++i)
                 if (!type[i] && (k = deg(i)) < DEG_BOUND) {
-//                    printf("delete %d\n", vertices[i].v_id),fflush(stdout);
+//                    printf("delete %d %f %f\n", vertices[i].v_id,(double)vertices[i].coord.x,(double)vertices[i].coord.y),fflush(stdout);
                     auto &curv = vertices[i];
                     ++cnt;
                     type[i] = -1;
@@ -714,23 +721,18 @@ public:
 
                     std::vector<TrianglePart> old_tr, new_tr;
                     for (int j = 0; j < k; ++j) {
-                        old_tr.push_back(TrianglePart({
-                                         std::vector<int>({i, polygon[j]->v_id, polygon[j + 1]->v_id}),
-                                         Triangle({curv.coord, polygon[j]->coord, polygon[j + 1]->coord}), isInner[j]
-                                       }));
+                        old_tr.emplace_back(std::vector<Vertex*>{&curv, polygon[j], polygon[j + 1]}, isInner[j]);
                         auto e1 = polygon[j]->one_starting_e, e2 = polygon[j + 1]->one_starting_e;
                         e1->prev = e2, e2->next = e1;
                         e1->adj_face = &new_f;
                     }
-
-                    for (int j = 2; j < k; ++j) {
-                        new_tr.push_back(TrianglePart({
-                                         std::vector<int>({polygon[0]->v_id, polygon[j - 1]->v_id, polygon[j]->v_id}),
-                                         Triangle({polygon[0]->coord, polygon[j - 1]->coord, polygon[j]->coord}), 0
-                                       }));
-                        if (j < k - 1)
-                            new_triangle(polygon[j - 1]);
-                    }
+                    
+                    int F0 = F;
+					triangulate(&new_f, 0);
+					
+                    new_tr.emplace_back(vertices_of_face(&new_f), 0);
+                    for(int j = F0; j < F; ++j)
+                    	new_tr.emplace_back(vertices_of_face(&faces[j]), 0);
                     for (auto tn: new_tr)
                         for (auto to: old_tr)
                             if (trianglesIntersect(tn.triangle, to.triangle))
@@ -741,6 +743,21 @@ public:
             real_v -= cnt;
         }
     }
+    
+    void triangulate(Face *face, bool inner) {
+        int F0 = F;
+        split_to_monotone(face);
+        int old_F = F;
+        triangulate_monotone(face);
+        for (int i = F0; i < old_F; ++i)
+            triangulate_monotone(&faces[i]);
+        if(inner){
+            face->inner = 1;
+            for(int i = F0; i < F; ++i)
+                faces[i].inner = 1;
+        }
+    }
+
 
     ~DCEL() {
         delete[] vertices;

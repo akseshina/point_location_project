@@ -25,20 +25,6 @@ const long long INF = 1e9 + 10;
 const point LEFT(-2 * INF, -INF - 1), RIGHT(2 * INF, -INF), TOP(0, 3 * INF);
 const point bigTriangle[3] = {LEFT, RIGHT, TOP};
 
-void triangulate(DCEL &dcel, Face *face, bool inner) {
-	int F0 = dcel.F;
-    dcel.split_to_monotone(face);
-    int old_F = dcel.F;
-    dcel.triangulate_monotone(face);
-    for (int i = F0; i < old_F; ++i)
-        dcel.triangulate_monotone(&dcel.faces[i]);
-    if(inner){
-	    face->inner = 1;
-        for (int i = F0; i < dcel.F; ++i)
-            dcel.faces[i].inner = 1;
-    }
-}
-
 std::pair<ld, ld> rt(std::vector<point> &points) {
     ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
 //    ld s = 0, c = 1;
@@ -109,7 +95,7 @@ int main() {
         	printf("%p: from %d to %d, face = %d, twin = %p\n",&dcel.edges[i], dcel.edges[i].starting_v->v_id, dcel.edges[i].next->starting_v->v_id, dcel.edges[i].adj_face->f_id, dcel.edges[i].twin);*/
 
         for(int i = 1; i <= 3; ++i)
-            triangulate(dcel, &dcel.faces[i], i == 1);
+            dcel.triangulate(&dcel.faces[i], i == 1);
         for(int i = 0; i < dcel.V; ++i)
         	dcel.vertices[i].v_id = i;
 
