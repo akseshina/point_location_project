@@ -92,26 +92,12 @@ struct Vertex {
     point coord;
     int v_id;
     v_type type;
-
-    Vertex() = default;
-
-private:
-    Vertex(const Vertex &);
-
-    Vertex operator=(const Vertex &);
 };
 
 struct Face {
     Edge *one_border_e;  /* any half-edge on the border */
     int f_id;
     int inner;
-
-    Face() = default;
-
-private:
-    Face(const Face &);
-
-    Face operator=(const Face &);
 };
 
 struct Edge {
@@ -121,13 +107,6 @@ struct Edge {
     Vertex *starting_v;
     Face *adj_face;
     int e_id;
-
-    Edge() = default;
-
-private:
-    Edge(const Edge &);
-
-    Edge operator=(const Edge &);
 };
 
 struct Segment {
