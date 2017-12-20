@@ -24,19 +24,19 @@ typedef long double ld;
 
 const ld EPS = 1e-5; //std::numeric_limits<long double >::epsilon(); //1e-9;
 inline bool gr(ld a, ld b){
-	return a > b + EPS;
+    return a > b + EPS;
 }
 inline bool ls(ld a, ld b){
-	return a < b - EPS;
+    return a < b - EPS;
 }
 inline bool eq(ld a, ld b){
-	return std::abs(a - b) < EPS;
+    return std::abs(a - b) < EPS;
 }
 inline bool geq(ld a, ld b){
-	return a >= b - EPS;
+    return a >= b - EPS;
 }
 inline bool leq(ld a, ld b){
-	return a <= b + EPS;
+    return a <= b + EPS;
 }
 
 
@@ -70,8 +70,8 @@ struct point {
     }
     
     inline void rt(ld s, ld c){
-	    ld x0 = c * x - s * y, y0 = c * y + s * x;
-		x = x0, y = y0;
+        ld x0 = c * x - s * y, y0 = c * y + s * x;
+        x = x0, y = y0;
     }
 };
 
@@ -335,7 +335,7 @@ public:
 
     void new_triangle(Vertex *a) { // insert diagonal b--c for triangle abc
 
-        //std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
+//        std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
 
         Edge *a_b = a->one_starting_e;
         Edge *c_a = a_b->prev;
@@ -703,23 +703,24 @@ public:
                 if (x == 1)
                     x = 0;
 
-            for (int i = 0; i < V; ++i)
-                if (!type[i] && deg(i) < DEG_BOUND) {
+            for (int i = 0, k; i < V; ++i)
+                if (!type[i] && (k = deg(i)) < DEG_BOUND) {
+//                    printf("delete %d\n", vertices[i].v_id),fflush(stdout);
                     auto &curv = vertices[i];
                     ++cnt;
                     type[i] = -1;
-
                     std::vector<Vertex *> polygon;
-                    std::vector<bool> isInner;
-                    int m = 0, u;
-                    Vertex *up;
-                    for (auto e0 = curv.one_starting_e, e = e0->twin; !type[u = (up = e->starting_v)->v_id]; e = e->next->twin) {
+                    std::vector<int> isInner;
+                    auto e0 = curv.one_starting_e, e = e0->twin;
+                    for (int j = 0; j < k; ++j, e = e->next->twin) {
+                        auto up = e->starting_v;
+                        int u = up->v_id;
                         assert(u != -1);
-                        type[u] = 1;
+                        if(!type[u])
+                            type[u] = 1;
                         polygon.push_back(up);
                         isInner.push_back(e->adj_face->inner == 1);
                         up->one_starting_e = e->twin->next;
-                        ++m;
                         e->e_id = e->twin->e_id = -1;
                         e->adj_face->f_id = -1;
                     }
@@ -733,33 +734,28 @@ public:
                     ++F;
 
                     std::vector<TrianglePart> old_tr, new_tr;
-                    for (int j = 0; j < m; ++j) {
+                    for (int j = 0; j < k; ++j) {
                         old_tr.push_back(TrianglePart({
-                                                              std::vector<int>(
-                                                                      {i, polygon[j]->v_id, polygon[j + 1]->v_id}),
-                                                              Triangle({curv.coord, polygon[j]->coord,
-                                                                        polygon[j + 1]->coord}), isInner[j]
-                                                      }));
+                                         std::vector<int>({i, polygon[j]->v_id, polygon[j + 1]->v_id}),
+                                         Triangle({curv.coord, polygon[j]->coord, polygon[j + 1]->coord}), isInner[j]
+                                       }));
                         auto e1 = polygon[j]->one_starting_e, e2 = polygon[j + 1]->one_starting_e;
                         e1->prev = e2, e2->next = e1;
                         e1->adj_face = &new_f;
                     }
 
-                    for (int j = 2; j < m; ++j) {
+                    for (int j = 2; j < k; ++j) {
                         new_tr.push_back(TrianglePart({
-                                                              std::vector<int>({polygon[0]->v_id, polygon[j - 1]->v_id,
-                                                                                polygon[j]->v_id}),
-                                                              Triangle({polygon[0]->coord, polygon[j - 1]->coord,
-                                                                        polygon[j]->coord}), 0
-                                                      }));
-                        if (j < m - 1)
+                                         std::vector<int>({polygon[0]->v_id, polygon[j - 1]->v_id, polygon[j]->v_id}),
+                                         Triangle({polygon[0]->coord, polygon[j - 1]->coord, polygon[j]->coord}), 0
+                                       }));
+                        if (j < k - 1)
                             new_triangle(polygon[j - 1]);
                     }
-
                     for (auto tn: new_tr)
                         for (auto to: old_tr)
                             if (trianglesIntersect(tn.triangle, to.triangle))
-                                ss.add(tn, to);
+                                ss.add(tn, to), ss.root = ss.get_id(tn);
                 }
             assert(cnt >= (V - 6) / 24);
 
