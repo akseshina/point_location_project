@@ -58,10 +58,13 @@ int main() {
     //freopen("input.txt", "r", stdin);
 
     int T, N, K;
+    T = 1;
     scanf("%d", &T);
 
     for (int t = 0; t < T; ++t) {
         scanf("%d", &N);
+
+        //std::cout << t << ' ' << N << std::endl;
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
         auto sc = rt(poly_points);
@@ -75,7 +78,15 @@ int main() {
         Edge *ein[3] = {&outer_dcel.edges[N + 4], &outer_dcel.edges[N + 3], &outer_dcel.edges[N + 2]};
 
         triangulate(inner_dcel);
-        triangulate(outer_dcel);
+        //triangulate(outer_dcel);
+
+        /*scanf("%d", &K);
+        int xt, yt;
+        for (int i = 0; i < K; ++i) {
+            scanf("%d%d", &xt, &yt);
+        }*/
+        std::cout << "OK" << std::endl;
+        continue;
 
         std::unordered_map<const Vertex *, Vertex *> vertex_mapping;
         std::unordered_map<const Edge *, Edge *> edge_mapping;

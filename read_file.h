@@ -15,11 +15,19 @@
 
 std::vector<point> read_points(int n) {
     std::vector<point> res;
-    int x, y;
+    int x, y, cur_n;
     for (int i = 0; i < n; ++i) {
         scanf("%d %d", &x, &y);
+        point new_p(x, y);
+        cur_n = res.size();
+        // if 3 vertices are on same line
+        if (cur_n >= 2 && eq(rot_matrix(res[cur_n - 2], res[cur_n - 1], new_p), 0))
+            res.pop_back();
         res.push_back(point(x, y));
     }
+    cur_n = res.size();
+    if (eq(rot_matrix(res[cur_n - 2], res[cur_n - 1], res[0]), 0))
+        res.pop_back();
     return res;
 }
 
