@@ -13,16 +13,16 @@ enum v_type {
 };
 
 //TODO: calculate real parameters
-const int MAX_V = 1000;
-const int MAX_E = 1000;
-const int MAX_F = 1000;
+const int MAX_V = 1e5 + 1;
+const int MAX_E = MAX_V + 5;
+const int MAX_F = MAX_V;
 const int DEG_BOUND = 12;
 
 struct Edge;
 
 typedef long double ld;
 
-const ld EPS = 1e-9;
+const ld EPS = 1e-5; //std::numeric_limits<long double >::epsilon(); //1e-9;
 inline bool gr(ld a, ld b){
 	return a > b + EPS;
 }
@@ -161,6 +161,9 @@ struct comp_segments {
 
         if(lhs.a == rhs.a && lhs.b == rhs.b)
             return false;
+
+        if (rhs.a == rhs.b && eq(y1 - y3, 2*EPS))
+            return true;
 
         auto yc = std::min(std::max(y1, y2), std::max(y3, y4));
 
@@ -332,7 +335,7 @@ public:
 
     void new_triangle(Vertex *a) { // insert diagonal b--c for triangle abc
 
-        std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
+        //std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
 
         Edge *a_b = a->one_starting_e;
         Edge *c_a = a_b->prev;
@@ -381,6 +384,7 @@ public:
         if (a->v_id > b->v_id)
             std::swap(a, b);
         diags.push_back({a->one_starting_e->prev, b->one_starting_e});
+        //std::cout << "new diagonal: " << a->v_id << ' ' << b->v_id << std::endl;
     }
 
 
@@ -401,8 +405,6 @@ public:
             // if b already has diag
             if (e_b_next->prev->starting_v->v_id != (N + b->v_id - 1) % N)
                 e_b_next = e_b_next->prev->twin;
-
-            std::cout << "new diagonal: " << a->v_id << ' ' << b->v_id << std::endl;
 
             Edge *e_a_next = e_a_prev->next;
             Edge *e_b_prev = e_b_next->prev;
@@ -491,7 +493,7 @@ public:
             /*
             char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
             std::cout << std::endl;
-            std::cout << v_i->v_id << ' ' << Types[v_i->type] << std::endl;
+            std::cout << v_i->v_id << '(' << v_i->coord.x << ',' << v_i->coord.y << ") " << Types[v_i->type] << std::endl;
             for (auto const& x : helper) {
                 std::cout << x.first.a->v_id << '-' << x.first.b->v_id
                           << " : "

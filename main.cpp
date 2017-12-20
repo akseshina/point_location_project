@@ -47,8 +47,8 @@ void triangulate(DCEL &dcel) {
 }
 
 std::pair<ld, ld> rt(std::vector<point> &points) {
-//	ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
-    ld s = 0, c = 1;
+	ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
+    // ld s = 0, c = 1;
     for (auto &p: points)
         p.rt(s, c);
     return {s, c};
@@ -58,10 +58,13 @@ int main() {
     //freopen("input.txt", "r", stdin);
 
     int T, N, K;
-    // scanf("%d", &T);
+    T = 1;
+    //scanf("%d", &T);
 
-    for (int t = 0; t < 1; ++t) { // change 1 to T
+    for (int t = 0; t < T; ++t) {
         scanf("%d", &N);
+
+        //std::cout << t << ' ' << N << std::endl;
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
         auto sc = rt(poly_points);
@@ -75,7 +78,15 @@ int main() {
         Edge *ein[3] = {&outer_dcel.edges[N + 4], &outer_dcel.edges[N + 3], &outer_dcel.edges[N + 2]};
 
         triangulate(inner_dcel);
-        triangulate(outer_dcel);
+        //triangulate(outer_dcel);
+
+        /*scanf("%d", &K);
+        int xt, yt;
+        for (int i = 0; i < K; ++i) {
+            scanf("%d%d", &xt, &yt);
+        }*/
+        std::cout << "OK" << std::endl;
+        continue;
 
         std::unordered_map<const Vertex *, Vertex *> vertex_mapping;
         std::unordered_map<const Edge *, Edge *> edge_mapping;
