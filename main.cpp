@@ -40,8 +40,8 @@ void triangulate(DCEL &dcel, Face *face, bool inner) {
 }
 
 std::pair<ld, ld> rt(std::vector<point> &points) {
-//    ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
-    ld s = 0, c = 1;
+    ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
+//    ld s = 0, c = 1;
     for (auto &p: points)
         p.rt(s, c);
     return {s, c};
@@ -104,24 +104,24 @@ int main() {
         for(int i = N; i < 2 * N; ++i)
         	dcel.edges[i].adj_face = &dcel.faces[i < N + r ? 2 : 3];
         	
-        for(int i = 0; i < dcel.E; ++i)
-        	printf("%p: from %d to %d, face = %d, twin = %p\n",&dcel.edges[i], dcel.edges[i].starting_v->v_id, dcel.edges[i].next->starting_v->v_id, dcel.edges[i].adj_face->f_id, dcel.edges[i].twin);
+/*        for(int i = 0; i < dcel.E; ++i)
+        	printf("%p: from %d to %d, face = %d, twin = %p\n",&dcel.edges[i], dcel.edges[i].starting_v->v_id, dcel.edges[i].next->starting_v->v_id, dcel.edges[i].adj_face->f_id, dcel.edges[i].twin);*/
 
-        triangulate(dcel, &dcel.faces[2], 0);
-//        for(int i = 1; i <= 3; ++i)
-//            triangulate(dcel, &dcel.faces[i], i == 1);
+        for(int i = 1; i <= 3; ++i)
+            triangulate(dcel, &dcel.faces[i], i == 1);
+        for(int i = 0; i < dcel.V; ++i)
+        	dcel.vertices[i].v_id = i;
 
         for (int i = 0; i < dcel.F; ++i){
             const auto &tt = dcel.vertices_of_face(&dcel.faces[i]);
-//            assert((int)tt.size() == 3);
-            for(auto p: tt)
+            assert((int)tt.size() == 3);
+/*            for(auto p: tt)
                 printf("%d ", p->v_id);
-            puts("");
+            if(dcel.faces[i].inner)
+            	puts("inner");
+            else
+            	puts("");*/
         }
-        return 0;
-        
-        for(int i = 0; i < dcel.V; ++i)
-        	dcel.vertices[i].v_id = i;
 
         SearchStructure ss;
         dcel.kirkpatrick_build(0, ss);
