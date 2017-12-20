@@ -57,6 +57,7 @@ int main() {
         scanf("%d", &N);
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
+        N = (int)poly_points.size();
         auto sc = rt(poly_points);
 /*        for(auto &p: poly_points)
             printf("%.3f %.3f\n", (double)p.x, (double)p.y);*/
