@@ -1,7 +1,6 @@
 #include <iostream>
 #include "DCEL.h"
 #include "read_file.h"
-#include <unordered_map>
 
 /*
 В первой строке дано целое число T — количество тестов.
@@ -26,21 +25,22 @@ const point LEFT(-2 * INF, -INF - 1), RIGHT(2 * INF, -INF), TOP(0, 3 * INF);
 const point bigTriangle[3] = {LEFT, RIGHT, TOP};
 
 std::pair<ld, ld> rt(std::vector<point> &points) {
-//    ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
-    ld s = 0, c = 1;
+    ld s = rand() % 100 / 100.0, c = sqrtl(1 - s * s);
+//    ld s = 0, c = 1;
     for (auto &p: points)
         p.rt(s, c);
     return {s, c};
 }
 
 int main() {
-    //freopen("input.txt", "r", stdin);
+    freopen("input.txt", "r", stdin);
 
     int T, N, K;
     T = 1;
-    //scanf("%d", &T);
+    scanf("%d", &T);
 
     for (int t = 0; t < T; ++t) {
+        std::cout << t << std::endl;
         scanf("%d", &N);
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
@@ -111,19 +111,11 @@ int main() {
             	puts("");*/
         }
 
-        std::cout << "OK" << std::endl;
-        continue;
-        scanf("%d", &K);
-        int xt, yt;
-        for (int i = 0; i < K; ++i) {
-            scanf("%d%d", &xt, &yt);
-        }
-        continue;
-
         SearchStructure ss;
         dcel.kirkpatrick_build(0, ss);
 
         scanf("%d", &K);
+
         int x, y;
         for (int i = 0; i < K; ++i) {
             scanf("%d%d", &x, &y);
