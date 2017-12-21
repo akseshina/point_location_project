@@ -309,14 +309,18 @@ public:
         faces[0].f_id = 0;
     }
 
-    inline int deg(int v) {
+    inline std::pair<int, int> deg(int v) {
         auto e0 = vertices[v].one_starting_e;
         if (!e0)
-            return 0;
-        int cnt = 1;
-        for (auto e = e0->twin; e->next != e0; e = e->next->twin)
-            ++cnt;
-        return cnt;
+            return {0, 0};
+        int cnt_all = 1, cnt = 0;
+        auto e = e0->twin;
+        for (; e->next != e0; e = e->next->twin, ++cnt_all)
+            if(e->starting_v->v_id != -1)
+            	++cnt;
+        if(e->starting_v->v_id != -1)
+        	++cnt;
+        return {cnt_all, cnt};
     }
 
     void new_triangle(Vertex *a) { // insert diagonal b--c for triangle abc
@@ -693,8 +697,10 @@ public:
                 if (x == 1)
                     x = 0;
 
-            for (int i = 0, k; i < V; ++i)
-                if (!type[i] && (k = deg(i)) < DEG_BOUND) {
+			std::pair<int, int> kp;
+            for (int i = 0; i < V; ++i)
+                if (!type[i] && (kp = deg(i)).second < DEG_BOUND) {
+                	int k = kp.first;
 //                    printf("delete %d %f %f\n", vertices[i].v_id,(double)vertices[i].coord.x,(double)vertices[i].coord.y),fflush(stdout);
                     auto &curv = vertices[i];
                     ++cnt;
@@ -742,7 +748,7 @@ public:
                             if (trianglesIntersect(tn.triangle, to.triangle))
                                 ss.add(tn, to), ss.root = ss.get_id(tn);
                 }
-            assert(cnt >= (V - 6) / 24);
+            assert(cnt >= (real_v - 6) / 24);
 
             real_v -= cnt;
         }
