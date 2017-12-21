@@ -382,14 +382,18 @@ public:
         for (int i = 0; i < diags.size(); ++i) {
             Edge *e_a_prev = diags[i].first;
             Vertex *a = e_a_prev->next->starting_v;
-            // if a already has diag
-            if (e_a_prev->next->next->starting_v->v_id != (a->v_id + 1) % N)
-                e_a_prev = e_a_prev->next->twin;
 
             Edge *e_b_next = diags[i].second;
             Vertex *b = e_b_next->starting_v;
+
+            Vertex *a_next = e_a_prev->next->next->starting_v;
+            // if a already has diag
+            if (!(a_next->v_id > a->v_id && a_next->v_id < b->v_id))
+                e_a_prev = e_a_prev->next->twin;
+
+            Vertex *b_prev = e_b_next->prev->starting_v;
             // if b already has diag
-            if (e_b_next->prev->starting_v->v_id != (N + b->v_id - 1) % N)
+            if (!(b_prev->v_id > a->v_id && b_prev->v_id < b->v_id))
                 e_b_next = e_b_next->prev->twin;
 
             Edge *e_a_next = e_a_prev->next;
@@ -465,8 +469,6 @@ public:
             next_v = next_v->one_starting_e->next->starting_v;
         }
 
-        //std::cout << "vs size: " << vs.size() << std::endl;
-
         std::vector<std::pair<Edge *, Edge *>> diags;
         std::map<Segment, Vertex *, comp_segments> helper;
 
@@ -475,9 +477,7 @@ public:
             Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
 
-
-            /*
-            char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
+            /*char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
             std::cout << std::endl;
             std::cout << v_i->v_id << '(' << v_i->coord.x << ',' << v_i->coord.y << ") " << Types[v_i->type] << std::endl;
             for (auto const& x : helper) {
