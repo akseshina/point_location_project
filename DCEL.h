@@ -388,13 +388,17 @@ public:
 
             Vertex *a_next = e_a_prev->next->next->starting_v;
             // if a already has diag
-            if (!(a_next->v_id > a->v_id && a_next->v_id < b->v_id))
+            while (!(a_next->v_id > a->v_id && a_next->v_id < b->v_id)) {
                 e_a_prev = e_a_prev->next->twin;
+                a_next = e_a_prev->next->next->starting_v;
+            }
 
             Vertex *b_prev = e_b_next->prev->starting_v;
             // if b already has diag
-            if (!(b_prev->v_id > a->v_id && b_prev->v_id < b->v_id))
+            while (!(b_prev->v_id > a->v_id && b_prev->v_id < b->v_id)) {
                 e_b_next = e_b_next->prev->twin;
+                b_prev = e_b_next->prev->starting_v;
+            }
 
             Edge *e_a_next = e_a_prev->next;
             Edge *e_b_prev = e_b_next->prev;
