@@ -13,7 +13,7 @@ enum v_type {
 };
 
 //TODO: calculate real parameters
-const int MAX_V = 1e5 + 1;
+const int MAX_V = 1e6 + 1;
 const int MAX_E = MAX_V + 5;
 const int MAX_F = MAX_V;
 const int DEG_BOUND = 12;
@@ -247,8 +247,7 @@ struct SearchStructure {
     }
 
     inline int get_id(const TrianglePart &a) {
-        auto nums = a.nums;
-        std::sort(nums.begin(), nums.end());
+        const auto &nums = a.nums;
         int id;
         if (mapping.count(nums))
             id = mapping[nums];
@@ -274,6 +273,7 @@ private:
     DCEL operator=(const DCEL &);
 
 public:
+
     DCEL(const std::vector<point> &poly_points) : DCEL() {
         unsigned long N = poly_points.size();
         V = N;
@@ -706,7 +706,8 @@ public:
                     ++cnt;
                     type[i] = -1;
                     std::vector<Vertex *> polygon;
-                    std::vector<int> isInner;
+                    std::vector<bool> isInner;
+                    std::vector<int> ids;
                     auto e0 = curv.one_starting_e, e = e0->twin;
                     for (int j = 0; j < k; ++j, e = e->next->twin) {
                         auto up = e->starting_v;
@@ -716,13 +717,12 @@ public:
                             type[u] = 1;
                         polygon.push_back(up);
                         isInner.push_back(e->adj_face->inner == 1);
+                        ids.push_back(u);
+
                         up->one_starting_e = e->twin->next;
                         e->e_id = e->twin->e_id = -1;
                         e->adj_face->f_id = -1;
                     }
-                    curv.v_id = -1;
-                    polygon.push_back(polygon.front());
-                    isInner.push_back(isInner.front());
 
                     Face &new_f = faces[F];
                     new_f.one_border_e = polygon.front()->one_starting_e;
@@ -730,15 +730,20 @@ public:
                     ++F;
 
                     std::vector<TrianglePart> old_tr, new_tr;
+
                     for (int j = 0; j < k; ++j) {
-                        old_tr.emplace_back(std::vector<Vertex*>{&curv, polygon[j], polygon[j + 1]}, isInner[j]);
-                        auto e1 = polygon[j]->one_starting_e, e2 = polygon[j + 1]->one_starting_e;
+                    	auto &p1 = polygon[j], &p2 = polygon[(j + 1) % k];
+                        old_tr.emplace_back(std::vector<Vertex*>{&curv, p1, p2}, isInner[j]);
+                        auto e1 = p1->one_starting_e, e2 = p2->one_starting_e;
                         e1->prev = e2, e2->next = e1;
                         e1->adj_face = &new_f;
                     }
+                    curv.v_id = -1;
                     
                     int F0 = F;
 					triangulate(&new_f, 0);
+                    for (int j = 0; j < k; ++j)
+                    	polygon[j] -> v_id = ids[j];
 					
                     new_tr.emplace_back(vertices_of_face(&new_f), 0);
                     for(int j = F0; j < F; ++j)
