@@ -87,10 +87,22 @@
 		<Unit filename="/home/margarita/AU/geometry/point_location_project/DCEL.h">
 			<Option target="point_location_project"/>
 		</Unit>
+		<Unit filename="/home/margarita/AU/geometry/point_location_project/double_arithmetics.h">
+			<Option target="point_location_project"/>
+		</Unit>
+		<Unit filename="/home/margarita/AU/geometry/point_location_project/geom_primitives.h">
+			<Option target="point_location_project"/>
+		</Unit>
 		<Unit filename="/home/margarita/AU/geometry/point_location_project/main.cpp">
 			<Option target="point_location_project"/>
 		</Unit>
+		<Unit filename="/home/margarita/AU/geometry/point_location_project/point.h">
+			<Option target="point_location_project"/>
+		</Unit>
 		<Unit filename="/home/margarita/AU/geometry/point_location_project/read_file.h">
+			<Option target="point_location_project"/>
+		</Unit>
+		<Unit filename="/home/margarita/AU/geometry/point_location_project/search_structure.h">
 			<Option target="point_location_project"/>
 		</Unit>
 		<Unit filename="/home/margarita/AU/geometry/point_location_project/CMakeLists.txt">

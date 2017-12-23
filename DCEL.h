@@ -1,5 +1,10 @@
 #pragma once
 
+#include "point.h"
+#include "double_arithmetics.h"
+#include "geom_primitives.h"
+#include "search_structure.h"
+
 #include <vector>
 #include <cstdio>
 #include <stack>
@@ -8,121 +13,11 @@
 #include <cassert>
 #include <unordered_map>
 
-enum v_type {
-    SPLIT, MERGE, START, END, REGULAR
-};
 
-//TODO: calculate real parameters
-const int MAX_V = 1e6 + 1;
-const int MAX_E = MAX_V + 5;
-const int MAX_F = MAX_V;
 const int DEG_BOUND = 12;
-
-struct Edge;
 
 typedef long double ld;
 
-const ld EPS = 1e-5; //std::numeric_limits<long double >::epsilon(); //1e-9;
-inline bool gr(ld a, ld b){
-    return a > b + EPS;
-}
-inline bool ls(ld a, ld b){
-    return a < b - EPS;
-}
-inline bool eq(ld a, ld b){
-    return std::abs(a - b) < EPS;
-}
-inline bool geq(ld a, ld b){
-    return a >= b - EPS;
-}
-inline bool leq(ld a, ld b){
-    return a <= b + EPS;
-}
-
-
-struct point {
-    point()
-            : x(0), y(0) {}
-
-    point(ld cur_x, ld cur_y)
-            : x(cur_x), y(cur_y) {}
-
-    ld x, y;
-
-    inline point operator-(const point &b) const {
-        return point(x - b.x, y - b.y);
-    }
-
-    inline ld operator*(const point &b) const {
-        return x * b.x + y * b.y;
-    }
-
-    inline ld operator%(const point &b) const {
-        return x * b.y - y * b.x;
-    }
-
-    inline bool operator<(const point &b) const {
-        return ls(x, b.x) || (eq(x, b.x) && ls(y, b.y));
-    }
-
-    inline bool operator==(const point &b) const {
-        return eq(x, b.x) && eq(y, b.y);
-    }
-    
-    inline void rt(ld s, ld c){
-        ld x0 = c * x - s * y, y0 = c * y + s * x;
-        x = x0, y = y0;
-    }
-};
-
-ld rot_matrix(point a, point b, point c) {
-    return a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y);
-}
-
-bool left_rot(point a, point b, point c) {
-    return gr(rot_matrix(a, b, c), 0);
-}
-
-bool right_rot(point a, point b, point c) {
-    return ls(rot_matrix(a, b, c), 0);
-}
-
-struct Vertex {
-    Edge *one_starting_e;  /* any half-edge which starts at this Vertex */
-    point coord;
-    int v_id;
-    v_type type;
-};
-
-struct Face {
-    Edge *one_border_e;  /* any half-edge on the border */
-    int f_id;
-    int inner;
-};
-
-struct Edge {
-    Edge *prev;
-    Edge *next;
-    Edge *twin;
-    Vertex *starting_v;
-    Face *adj_face;
-    int e_id;
-};
-
-struct Segment {
-    Segment(Vertex *pa, Vertex *pb)
-            : a(pa), b(pb) {}
-
-    Vertex *a;
-    Vertex *b;
-};
-
-struct comp_y {
-    bool operator()(const Vertex *a, const Vertex *b) {
-        return gr(a->coord.y, b->coord.y) ||
-               (eq(a->coord.y, b->coord.y) && ls(a->coord.x, b->coord.x));
-    }
-};
 
 struct comp_segments {
     bool operator()(const Segment &lhs, const Segment &rhs) const {
@@ -136,13 +31,9 @@ struct comp_segments {
         auto y3 = rhs.a->coord.y;
         auto x4 = rhs.b->coord.x;
         auto y4 = rhs.b->coord.y;
-        //std::cout << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << ' ' << x0 << ' ' << y0 << std::endl;
 
-        if(lhs.a == rhs.a && lhs.b == rhs.b)
+        if (lhs.a == rhs.a && lhs.b == rhs.b)
             return false;
-
-        if (rhs.a == rhs.b && eq(y1 - y3, 2*EPS))
-            return true;
 
         auto yc = std::min(std::max(y1, y2), std::max(y3, y4));
 
@@ -151,119 +42,17 @@ struct comp_segments {
         if (rhs.a != rhs.b)
             x_on_rhs = (yc - y3) * (long double) (x4 - x3) / (y4 - y3) + (long double) x3;
 
-        /*
-        std::cout << "Compare " << lhs.a->v_id << '-' << lhs.b->v_id
-                  << ' ' << rhs.a->v_id << '-' << rhs.b->v_id << ' ' << x_on_lhs << ' ' << x_on_rhs
-                  << std::endl;
-        std::cout << yc << std::endl;
-         */
-
         return ls(x_on_lhs, x_on_rhs);
     }
 };
 
-struct Triangle {
-    point v[3];
 
-	Triangle(){}    
-    Triangle(const std::vector<point> &a) {
-        assert((int) a.size() == 3);
-        for (int k = 0; k < 3; ++k)
-            v[k] = a[k];
-        if ((v[1] - v[0]) % (v[2] - v[0]) < 0)
-            std::swap(v[1], v[2]);
-    }
-
-    bool contains(const point &p) {
-        return geq((v[1] - v[0]) % (p - v[0]), 0) &&
-               leq((v[2] - v[0]) % (p - v[0]), 0) &&
-               geq((v[2] - v[1]) % (p - v[1]), 0);
-    }
-};
-
-struct TrianglePart {
-    std::vector<int> nums;
-    Triangle triangle;
-    bool inner;
-    TrianglePart(std::vector<Vertex*> v, bool in):inner(in){
-    	assert((int)v.size() == 3);
-    	triangle = Triangle({v[0]->coord, v[1]->coord, v[2]->coord});
-    	nums = {v[0]->v_id, v[1]->v_id, v[2]->v_id};
-    	std::sort(nums.begin(), nums.end());
-    }
-};
-
-inline int sign(ld a) {
-    return (a > 0) - (a < 0);
+void add_diagonal_to_list(Vertex *a, Vertex *b, std::vector<std::pair<Edge *, Edge *>> &diags) {
+    if (a->v_id > b->v_id)
+        std::swap(a, b);
+    diags.push_back({a->one_starting_e->prev, b->one_starting_e});
+    //std::cout << "new diagonal: " << a->v_id << ' ' << b->v_id << std::endl;
 }
-
-inline bool onInterval(const point &p, const point &a, const point &b) {
-    return eq((p - a) % (b - a), 0) && geq((p - a) * (b - a), 0) && geq((p - b) * (a - b), 0);
-}
-
-bool intervalIntersects(const point &a, const point &b, const point &c, const point &d) {
-    if (onInterval(a, c, d) || onInterval(b, c, d) || onInterval(c, a, b) || onInterval(d, a, b))
-        return 1;
-    return sign((a - b) % (c - b)) * sign((a - b) % (d - b)) < 0 &&
-           sign((c - d) % (a - d)) * sign((c - d) % (b - d)) < 0;
-}
-
-bool trianglesIntersect(const Triangle &a, const Triangle &b) {
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            if (intervalIntersects(a.v[i], a.v[(i + 1) % 3], b.v[j], b.v[(j + 1) % 3]))
-                return 1;
-    return 0;
-}
-
-
-struct VectorHash {
-    size_t operator()(const std::vector<int> &v) const {
-        size_t s = 0;
-        for (int x: v)
-            s = s * 239017 + (x + 1);
-        return s;
-    }
-};
-
-struct SearchStructure {
-    std::vector<int> edges[MAX_F];
-    std::vector<std::pair<Triangle, bool>> triangles;
-    std::unordered_map<std::vector<int>, int, VectorHash> mapping;
-    int root;
-
-    bool inside(const point &p) {
-        return inside(p, root);
-    }
-
-    bool inside(const point &p, int v) {
-        if (edges[v].empty())
-            return triangles[v].second;
-
-        for (int u: edges[v])
-            if (triangles[u].first.contains(p))
-                return inside(p, u);
-        return 0;
-    }
-
-    inline int get_id(const TrianglePart &a) {
-        const auto &nums = a.nums;
-        int id;
-        if (mapping.count(nums))
-            id = mapping[nums];
-        else {
-            id = (int) triangles.size();
-            mapping[nums] = id;
-            triangles.push_back(std::make_pair(a.triangle, a.inner));
-        }
-        return id;
-    }
-
-    inline void add(const TrianglePart &a, const TrianglePart &b) {
-        int a_id = get_id(a), b_id = get_id(b);
-        edges[a_id].push_back(b_id);
-    }
-};
 
 
 struct DCEL {
@@ -274,7 +63,7 @@ private:
 
 public:
 
-    DCEL(const std::vector<point> &poly_points) : DCEL() {
+    DCEL(const std::vector<Point> &poly_points) : DCEL() {
         unsigned long N = poly_points.size();
         V = N;
         E = 2 * N;  // first N are for inner cycle, second N are for outer
@@ -309,6 +98,69 @@ public:
         faces[0].f_id = 0;
     }
 
+
+    void build_triangulation_structure(int r, const std::vector<Point> &big_triangle) {
+        int N = V;
+
+        Edge *ein[3], *eout[3], *em_in[3], *em_out[3];
+
+        for (int i = 0; i < 3; ++i) {
+            ein[i] = &edges[E++];
+            eout[i] = &edges[E++];
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            *ein[i] = Edge{ein[(i + 2) % 3], ein[(i + 1) % 3], eout[i], &vertices[N + i],
+                           &faces[i == 0 ? 2 : 3], (int) (ein[i] - edges)};
+            *eout[i] = Edge{eout[(i + 1) % 3], eout[(i + 2) % 3], ein[i], &vertices[N + (i + 1) % 3],
+                            &faces[0], int (eout[i] - edges)};
+        }
+
+        for (int i = 0; i < 2; ++i) {
+            em_in[i] = &edges[E++];
+            em_out[i] = &edges[E++];
+        }
+
+        *em_in[0] = Edge{ein[2], &edges[2 * N - 1], em_out[0], &vertices[N], &faces[3],
+                         (int) (em_in[0] - edges)};
+        *em_out[0] = Edge{&edges[N], ein[0], em_in[0], &vertices[0], &faces[2],
+                          (int) (em_out[0] - edges)};
+        *em_in[1] = Edge{ein[0], &edges[N + (r + N - 1) % N], em_out[1], &vertices[N + 1], &faces[2],
+                         (int) (em_in[1] - edges)};
+        *em_out[1] = Edge{&edges[N + r], ein[1], em_in[1], &vertices[r], &faces[3],
+                          (int) (em_out[1] - edges)};
+
+        ein[2]->next = edges[2 * N - 1].prev = em_in[0];
+        edges[N].next = ein[0]->prev = em_out[0];
+        ein[0]->next = edges[N + (r + N - 1) % N].prev = em_in[1];
+        edges[N + r].next = ein[1]->prev = em_out[1];
+
+        for (int i = 0; i < 3; ++i)
+            vertices[N + i] = Vertex{ein[i], big_triangle[i], N + i, v_type()};
+        V += 3;
+
+        F = 4;
+        faces[0] = Face{eout[0], 0, 0};
+        faces[1] = Face{&edges[0], 1, 1};
+        faces[2] = Face{ein[0], 2, 0};
+        faces[3] = Face{ein[1], 3, 0};
+
+        for (int i = N; i < 2 * N; ++i)
+            edges[i].adj_face = &faces[i < N + r ? 2 : 3];
+
+        for (int i = 1; i <= 3; ++i)
+            triangulate(&faces[i], i == 1);
+
+        for (int i = 0; i < V; ++i)
+            vertices[i].v_id = i;
+
+        for (int i = 0; i < F; ++i) {
+            const auto &tt = vertices_of_face(&faces[i]);
+            assert((int) tt.size() == 3);
+        }
+    }
+
+
     inline std::pair<int, int> deg(int v) {
         auto e0 = vertices[v].one_starting_e;
         if (!e0)
@@ -316,17 +168,15 @@ public:
         int cnt_all = 1, cnt = 0;
         auto e = e0->twin;
         for (; e->next != e0; e = e->next->twin, ++cnt_all)
-            if(e->starting_v->v_id != -1)
-            	++cnt;
-        if(e->starting_v->v_id != -1)
-        	++cnt;
+            if (e->starting_v->v_id != -1)
+                ++cnt;
+        if (e->starting_v->v_id != -1)
+            ++cnt;
         return {cnt_all, cnt};
     }
 
+
     void new_triangle(Vertex *a) { // insert diagonal b--c for triangle abc
-
-//        std::cout << "triangle: " << a->coord.x << ' ' << a->coord.y << std::endl;
-
         Edge *a_b = a->one_starting_e;
         Edge *c_a = a_b->prev;
         Vertex *b = a_b->next->starting_v;
@@ -367,14 +217,6 @@ public:
         c_a->prev = b_c;
 
         c->one_starting_e = c_b;
-    }
-
-
-    void add_diagonal_to_list(Vertex *a, Vertex *b, std::vector<std::pair<Edge *, Edge *>> &diags) {
-        if (a->v_id > b->v_id)
-            std::swap(a, b);
-        diags.push_back({a->one_starting_e->prev, b->one_starting_e});
-        //std::cout << "new diagonal: " << a->v_id << ' ' << b->v_id << std::endl;
     }
 
 
@@ -485,16 +327,6 @@ public:
             Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
 
-            /*char *Types[] = {"SPLIT", "MERGE", "START", "END", "REGULAR"};
-            std::cout << std::endl;
-            std::cout << v_i->v_id << '(' << v_i->coord.x << ',' << v_i->coord.y << ") " << Types[v_i->type] << std::endl;
-            for (auto const& x : helper) {
-                std::cout << x.first.a->v_id << '-' << x.first.b->v_id
-                          << " : "
-                          << x.second->v_id
-                          << std::endl ;
-            }*/
-
             switch (v_i->type) {
                 case START: {
                     // Insert e_i in T, helper(e_i) <- v_i
@@ -600,14 +432,13 @@ public:
                 orientation = 1;
             }
 
-            if (vs[j] == e_end) { // Текущая вершина v_j является нижним концом стороны e,
-                // ограничивающей воронку
+            if (vs[j] == e_end) {
                 for (int si = 0; si < s.size() - 1; ++si)
                     new_triangle(s[si]);
                 s.clear();
                 s.push_back(vs[j - 1]);
                 s.push_back(vs[j]);
-            } else {                // Вершина v_j принадлежит последовательной цепи вершин, добавленных в S
+            } else {
                 Vertex *last = s.back();
                 s.pop_back();
                 if (orientation == 0)
@@ -653,7 +484,7 @@ public:
     }
 
 
-    void assign_vertices_types(std::vector<Vertex *> vs) {
+    void assign_vertices_types(std::vector<Vertex *> & vs) {
         std::vector<v_type> res;
         for (int i = 0; i < vs.size(); ++i) {
             Vertex *cur = vs[i];
@@ -674,7 +505,8 @@ public:
         }
     }
 
-    void kirkpatrick_build(int outerFace, SearchStructure &ss) {
+
+    void kirkpatrick_build(int outerFace, Search_Structure &ss) {
         int real_v = V;
         std::vector<int> type(V); // outer = -2, deleted = -1, locked on this round = 1
 
@@ -697,11 +529,10 @@ public:
                 if (x == 1)
                     x = 0;
 
-			std::pair<int, int> kp;
+            std::pair<int, int> kp;
             for (int i = 0; i < V; ++i)
                 if (!type[i] && (kp = deg(i)).second < DEG_BOUND) {
-                	int k = kp.first;
-//                    printf("delete %d %f %f\n", vertices[i].v_id,(double)vertices[i].coord.x,(double)vertices[i].coord.y),fflush(stdout);
+                    int k = kp.first;
                     auto &curv = vertices[i];
                     ++cnt;
                     type[i] = -1;
@@ -713,7 +544,7 @@ public:
                         auto up = e->starting_v;
                         int u = up->v_id;
                         assert(u != -1);
-                        if(!type[u])
+                        if (!type[u])
                             type[u] = 1;
                         polygon.push_back(up);
                         isInner.push_back(e->adj_face->inner == 1);
@@ -729,28 +560,28 @@ public:
                     new_f.f_id = F;
                     ++F;
 
-                    std::vector<TrianglePart> old_tr, new_tr;
+                    std::vector<Triangle_Part> old_tr, new_tr;
 
                     for (int j = 0; j < k; ++j) {
-                    	auto &p1 = polygon[j], &p2 = polygon[(j + 1) % k];
-                        old_tr.emplace_back(std::vector<Vertex*>{&curv, p1, p2}, isInner[j]);
+                        auto &p1 = polygon[j], &p2 = polygon[(j + 1) % k];
+                        old_tr.emplace_back(std::vector<Vertex *>{&curv, p1, p2}, isInner[j]);
                         auto e1 = p1->one_starting_e, e2 = p2->one_starting_e;
                         e1->prev = e2, e2->next = e1;
                         e1->adj_face = &new_f;
                     }
                     curv.v_id = -1;
-                    
+
                     int F0 = F;
-					triangulate(&new_f, 0);
+                    triangulate(&new_f, 0);
                     for (int j = 0; j < k; ++j)
-                    	polygon[j] -> v_id = ids[j];
-					
+                        polygon[j]->v_id = ids[j];
+
                     new_tr.emplace_back(vertices_of_face(&new_f), 0);
-                    for(int j = F0; j < F; ++j)
-                    	new_tr.emplace_back(vertices_of_face(&faces[j]), 0);
+                    for (int j = F0; j < F; ++j)
+                        new_tr.emplace_back(vertices_of_face(&faces[j]), 0);
                     for (auto tn: new_tr)
                         for (auto to: old_tr)
-                            if (trianglesIntersect(tn.triangle, to.triangle))
+                            if (triangles_intersect(tn.triangle, to.triangle))
                                 ss.add(tn, to), ss.root = ss.get_id(tn);
                 }
             assert(cnt >= (real_v - 6) / 24);
@@ -758,7 +589,8 @@ public:
             real_v -= cnt;
         }
     }
-    
+
+
     void triangulate(Face *face, bool inner) {
         int F0 = F;
         split_to_monotone(face);
@@ -766,9 +598,9 @@ public:
         triangulate_monotone(face);
         for (int i = F0; i < old_F; ++i)
             triangulate_monotone(&faces[i]);
-        if(inner){
+        if (inner) {
             face->inner = 1;
-            for(int i = F0; i < F; ++i)
+            for (int i = F0; i < F; ++i)
                 faces[i].inner = 1;
         }
     }
@@ -786,6 +618,7 @@ public:
         faces = new Face[MAX_F]();
         edges = new Edge[MAX_E]();
     }
+
 
     Vertex *vertices;
     Face *faces;
