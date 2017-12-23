@@ -33,15 +33,14 @@ std::pair<ld, ld> rt(std::vector<point> &points) {
 }
 
 int main() {
-    freopen("input.txt", "r", stdin);
+    assert(freopen("input.txt", "r", stdin));
+    assert(freopen("output.txt", "w", stdout));
 
     int T, N, K;
-    T = 1;
     scanf("%d", &T);
 
     for (int t = 0; t < T; ++t) {
-        std::cout << t << std::endl;
-        scanf("%d", &N);
+        assert(scanf("%d", &N) == 1);
         assert(N >= 3);
         std::vector<point> poly_points = read_points(N);
         N = (int)poly_points.size();
@@ -115,10 +114,9 @@ int main() {
         dcel.kirkpatrick_build(0, ss);
 
         scanf("%d", &K);
-
-        int x, y;
         for (int i = 0; i < K; ++i) {
-            scanf("%d%d", &x, &y);
+	        int x, y;
+            assert(scanf("%d%d", &x, &y) == 2);
             point p(x, y);
             p.rt(sc.first, sc.second);
             puts(ss.inside(p) ? "INSIDE" : "OUTSIDE");

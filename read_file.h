@@ -17,7 +17,7 @@ std::vector<point> read_points(int n) {
     std::vector<point> res;
     int x, y, cur_n;
     for (int i = 0; i < n; ++i) {
-        scanf("%d %d", &x, &y);
+        assert(scanf("%d%d", &x, &y) == 2);
         point new_p(x, y);
         cur_n = res.size();
         // if 3 vertices are on same line
