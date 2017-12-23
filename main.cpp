@@ -111,18 +111,19 @@ int main() {
             	puts("");*/
         }
 
-        SearchStructure ss;
-        dcel.kirkpatrick_build(0, ss);
+        //SearchStructure ss;
+        //dcel.kirkpatrick_build(0, ss);
 
         scanf("%d", &K);
 
         int x, y;
         for (int i = 0; i < K; ++i) {
             scanf("%d%d", &x, &y);
-            point p(x, y);
-            p.rt(sc.first, sc.second);
-            puts(ss.inside(p) ? "INSIDE" : "OUTSIDE");
+            //point p(x, y);
+            //p.rt(sc.first, sc.second);
+            //puts(ss.inside(p) ? "INSIDE" : "OUTSIDE");
         }
+        std::cout << "OK" << std::endl;
     }
 
     return 0;
