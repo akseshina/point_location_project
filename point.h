@@ -33,8 +33,8 @@ struct Point {
         return eq(x, b.x) && eq(y, b.y);
     }
 
-    inline void rotate(ld s, ld c){
-        ld x0 = c * x - s * y, y0 = c * y + s * x;
+    inline void rotate(std::pair<ld, ld> rv){
+        ld s = rv.first, c = rv.second, x0 = c * x - s * y, y0 = c * y + s * x;
         x = x0, y = y0;
     }
 };

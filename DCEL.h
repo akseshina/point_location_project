@@ -64,7 +64,7 @@ private:
 public:
 
     DCEL(const std::vector<Point> &poly_points) : DCEL() {
-        unsigned long N = poly_points.size();
+        int N = poly_points.size();
         V = N;
         E = 2 * N;  // first N are for inner cycle, second N are for outer
         F = 2;      // 1 is for inner, 0 is for outer
@@ -154,10 +154,8 @@ public:
         for (int i = 0; i < V; ++i)
             vertices[i].v_id = i;
 
-        for (int i = 0; i < F; ++i) {
-            const auto &tt = vertices_of_face(&faces[i]);
-            assert((int) tt.size() == 3);
-        }
+        for (int i = 0; i < F; ++i) 
+            assert((int) vertices_of_face(&faces[i]).size() == 3);
     }
 
 
@@ -221,11 +219,8 @@ public:
 
 
     void add_diagonals(const std::vector<std::pair<Edge *, Edge *>> &diags, const std::vector<Vertex *> &vs) {
-
-        size_t N = vs.size();
-
         // add new half-edges
-        for (int i = 0; i < diags.size(); ++i) {
+        for (int i = 0; i < (int) diags.size(); ++i) {
             Edge *e_a_prev = diags[i].first;
             Vertex *a = e_a_prev->next->starting_v;
 
@@ -273,7 +268,7 @@ public:
 
         // add new faces
         Face *old_face = vs[0]->one_starting_e->adj_face;
-        for (int j = 0; j < vs.size(); ++j) {
+        for (int j = 0; j < (int) vs.size(); ++j) {
             Edge *start_e = vs[j]->one_starting_e;
             if (start_e->adj_face == old_face) {
 
@@ -322,7 +317,7 @@ public:
         std::vector<std::pair<Edge *, Edge *>> diags;
         std::map<Segment, Vertex *, comp_segments> helper;
 
-        for (int i = 0; i < vs.size(); ++i) {
+        for (int i = 0; i < (int) vs.size(); ++i) {
             Vertex *v_i = vs[i];
             Segment e_i(v_i, v_i->one_starting_e->next->starting_v);
             Segment e_i_prev(v_i->one_starting_e->prev->starting_v, v_i);
@@ -424,7 +419,7 @@ public:
         s.push_back(vs[0]);
         s.push_back(vs[1]);
 
-        for (int j = 2; j < vs.size() - 1; ++j) {
+        for (int j = 2; j < int(vs.size()) - 1; ++j) {
             Vertex *e_end = s[0]->one_starting_e->next->starting_v;
             int orientation = 0;
             if (e_end == s[1]) {
@@ -433,7 +428,7 @@ public:
             }
 
             if (vs[j] == e_end) {
-                for (int si = 0; si < s.size() - 1; ++si)
+                for (int si = 0; si < (int) s.size() - 1; ++si)
                     new_triangle(s[si]);
                 s.clear();
                 s.push_back(vs[j - 1]);
@@ -459,7 +454,7 @@ public:
         }
 
         if (s.size() > 2)
-            for (int si = 0; si < s.size() - 2; ++si)
+            for (int si = 0; si < int(s.size()) - 2; ++si)
                 new_triangle(s[si]);
         s.clear();
     }
@@ -486,7 +481,7 @@ public:
 
     void assign_vertices_types(std::vector<Vertex *> & vs) {
         std::vector<v_type> res;
-        for (int i = 0; i < vs.size(); ++i) {
+        for (int i = 0; i < (int) vs.size(); ++i) {
             Vertex *cur = vs[i];
             Vertex *prev = cur->one_starting_e->prev->starting_v;
             Vertex *next = cur->one_starting_e->next->starting_v;
