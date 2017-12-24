@@ -4,7 +4,7 @@
 
 typedef long double ld;
 
-const ld EPS = std::numeric_limits<long double >::epsilon();  //1e-9;
+const ld EPS = 1e-9;
 
 
 inline bool gr(ld a, ld b){

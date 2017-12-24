@@ -14,6 +14,7 @@ K
 */
 
 const long long INF = 1e9 + 10;
+const int RAND_DENOM = 100;
 const Point LEFT(-2 * INF, -INF - 1);
 const Point RIGHT(2 * INF, -INF);
 const Point TOP(0, 3 * INF);
@@ -40,7 +41,7 @@ int main() {
 
     int T, N, K;
     scanf("%d", &T);
-    ld rot_sin = rand() % 100 / 100.0, rot_cos = sqrtl(1 - rot_sin * rot_sin);
+    ld rot_sin = (rand() % (RAND_DENOM - 1) + 1) / ld(RAND_DENOM), rot_cos = sqrtl(1 - rot_sin * rot_sin);
 
     std::vector<Point> big_triangle = {LEFT, RIGHT, TOP};
     rotate(big_triangle, rot_sin, rot_cos);
@@ -52,14 +53,13 @@ int main() {
         std::vector<Point> poly_points = read_points(N);
 
         N = (int) poly_points.size();
+        make_ccw(poly_points); // the leftmost bottommost point now has index 0
+        int rightmost_point_index = max_element(poly_points.begin(), poly_points.end()) - poly_points.begin();
+        assert(rightmost_point_index > 0);
         rotate(poly_points, rot_sin, rot_cos);
 
-        make_ccw(poly_points); // leftest bottoms point now has index 0
         DCEL dcel(poly_points);
-
-        int rightest_point_index = max_element(poly_points.begin(), poly_points.end()) - poly_points.begin();
-        assert(rightest_point_index > 0);
-        dcel.build_triangulation_structure(rightest_point_index, big_triangle);
+        dcel.build_triangulation_structure(rightmost_point_index, big_triangle);
 
         Search_Structure ss;
         dcel.kirkpatrick_build(0, ss);
