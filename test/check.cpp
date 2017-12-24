@@ -50,7 +50,7 @@ vi f(const char *fname){
 }
 
 int main(){
-	vi v1 = f("test.out"), v2 = f("test2.out");
+	vi v1 = f("output.txt"), v2 = f("output2.txt");
 
 	assert(v1.size() == v2.size());
 	forn(i, sz(v1))

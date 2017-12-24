@@ -1,5 +1,5 @@
 @echo off
-	main.exe <test.in >test.out || exit
-	stupid.exe <test.in >test2.out || exit
+	main.exe || exit
+	stupid.exe <input.txt >output2.txt || exit
 	check.exe || exit
-	echo Test %%i - OK
+	echo OK

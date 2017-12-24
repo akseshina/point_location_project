@@ -60,9 +60,8 @@ std::pair<ld, ld> gen_random_rotate(const std::vector<Point> &polygon, const std
 }
 
 int main() {
-
-    freopen("input.txt", "r", stdin);
-    freopen("output.txt", "w", stdout);
+    assert(freopen("input.txt", "r", stdin));
+    assert(freopen("output.txt", "w", stdout));
 
     int T, N, K;
     scanf("%d", &T);
