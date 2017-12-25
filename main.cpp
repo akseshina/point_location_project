@@ -14,12 +14,8 @@ K
 Все координаты — целые числа по модулю не превосходящие 10^9
 */
 
-const long long INF = 1e9 + 10;
-const int RAND_DENOM = 100;
-const Point LEFT(-2 * INF, -INF - 1);
-const Point RIGHT(2 * INF, -INF);
-const Point TOP(0, 3 * INF);
 
+const int RAND_DENOM = 64;
 
 void make_ccw(std::vector<Point> &points) {
     std::rotate(points.begin(), std::min_element(points.begin(), points.end()), points.end());
@@ -34,29 +30,31 @@ void rotate(std::vector<Point> &points, std::pair<ld, ld> rotate_vec) {
 }
 
 std::pair<ld, ld> gen_random_rotate(const std::vector<Point> &polygon, const std::vector<Point> &triangle){
-	std::vector<Point> all;
-	std::vector<ld> ys;
-	std::pair<ld, ld> rotate_vec;
-	bool ok = 0;
+    std::vector<Point> all;
+    std::vector<ld> ys;
+    std::pair<ld, ld> rotate_vec;
+    bool ok = 0;
 
-	while(!ok){
-		all = polygon;
-		all.insert(all.end(), triangle.begin(), triangle.end());
+    int cnt = 0;
+    while(!ok){
+        assert(++cnt < 100);
+        all = polygon;
+        all.insert(all.end(), triangle.begin(), triangle.end());
 
-		ld rot_sin = (rand() % (RAND_DENOM - 1) + 1) / ld(RAND_DENOM);
-		rotate(all, rotate_vec = {rot_sin, sqrtl(1 - rot_sin * rot_sin)});
+        ld rot_sin = (rand() % (RAND_DENOM - 1) + 1) / ld(RAND_DENOM);
+        rotate(all, rotate_vec = {rot_sin, sqrtl(1 - rot_sin * rot_sin)});
 
-		ys.clear();
-		for(const auto &p: all)
-			ys.push_back(p.y);
-		std::sort(ys.begin(), ys.end());
+        ys.clear();
+        for(const auto &p: all)
+            ys.push_back(p.y);
+        std::sort(ys.begin(), ys.end());
 
-		ok = 1;
-		for(int i = 0; i < int(ys.size()) - 1 && ok; ++i)
-			if(eq(ys[i], ys[i + 1]))
-				ok = 0;
-	}
-	return rotate_vec;
+        ok = 1;
+        for(int i = 0; i < int(ys.size()) - 1 && ok; ++i)
+            if(eq(ys[i], ys[i + 1]))
+                ok = 0;
+    }
+    return rotate_vec;
 }
 
 int main() {
@@ -66,23 +64,29 @@ int main() {
     int T, N, K;
     scanf("%d", &T);
 
-    std::vector<Point> big_triangle_orig = {LEFT, RIGHT, TOP}, big_triangle;
-
     for (int t = 0; t < T; ++t) {
         assert(scanf("%d", &N) == 1);
         assert(N >= 3);
 
         std::vector<Point> polygon = read_points(N);
         N = (int) polygon.size();
+        std::vector<Point> polygon2 = polygon;
+        
+        ld INF = 0;
+        for(const auto &p: polygon)
+            INF = std::max(INF, std::max(std::abs(p.x), std::abs(p.y)));
+        INF += 10;
+        Point LEFT(-2 * INF, -INF - 1);
+        Point RIGHT(2 * INF, -INF);
+        Point TOP(0, 3 * INF);
 
         make_ccw(polygon); // the leftmost bottommost point now has index 0
         int rightmost_point_index = max_element(polygon.begin(), polygon.end()) - polygon.begin();
         assert(rightmost_point_index > 0);
 
-        std::pair<ld, ld> rotate_vec = gen_random_rotate(polygon, big_triangle_orig);
-//      std::pair<ld, ld> rotate_vec(0, 1);
+        std::vector<Point> big_triangle{LEFT, RIGHT, TOP};
+        std::pair<ld, ld> rotate_vec = gen_random_rotate(polygon, big_triangle);
         rotate(polygon, rotate_vec);
-        big_triangle = big_triangle_orig;
         rotate(big_triangle, rotate_vec);
 
         DCEL dcel(polygon);

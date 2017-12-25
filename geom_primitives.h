@@ -4,8 +4,8 @@
 
 #include <cassert>
 
-const int MAX_V = 1e5 + 1;
-const int MAX_E = MAX_V + 5;
+const int MAX_V = 2e6 + 10;
+const int MAX_E = MAX_V;
 const int MAX_F = MAX_V;
 
 inline int sign(ld a) {

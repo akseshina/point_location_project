@@ -4,7 +4,7 @@
 
 typedef long double ld;
 
-const ld EPS = 1e-9;
+const ld EPS = 1e-6;
 
 
 inline bool gr(ld a, ld b){

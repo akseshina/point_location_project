@@ -63,8 +63,13 @@ private:
 
 public:
 
-    DCEL(const std::vector<Point> &poly_points) : DCEL() {
+    DCEL(const std::vector<Point> &poly_points){
         int N = poly_points.size();
+        int max_v = N + 100, max_f = max_v * (DEG_BOUND + 5), max_e = max_f * 3;
+        vertices = new Vertex[max_v]();
+        faces = new Face[max_f]();
+        edges = new Edge[max_e]();
+
         V = N;
         E = 2 * N;  // first N are for inner cycle, second N are for outer
         F = 2;      // 1 is for inner, 0 is for outer
@@ -606,14 +611,6 @@ public:
         delete[] faces;
         delete[] edges;
     }
-
-    DCEL() {
-        V = E = F = 0;
-        vertices = new Vertex[MAX_V]();
-        faces = new Face[MAX_F]();
-        edges = new Edge[MAX_E]();
-    }
-
 
     Vertex *vertices;
     Face *faces;
